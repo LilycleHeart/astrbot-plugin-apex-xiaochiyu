@@ -1,0 +1,8 @@
+{
+  "apex_api_key": {
+    "description": "Apex Legends API Key",
+    "type": "string",
+    "hint": "在 https://portal.apexlegendsapi.com 免费注册获取",
+    "obvious_hint": true
+  }
+}
