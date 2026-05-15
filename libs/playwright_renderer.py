@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
+import base64
+import io
+import re
+
+from PIL import Image
 
 from .config import RANK_COLORS
 from .playwright_manager import run_with_page
@@ -482,12 +488,6 @@ def _render_moe_number_base64(number: int) -> str:
 #  图片缓存 — 远程URL→base64，零网络请求渲染
 # ══════════════════════════════════════════
 
-import io
-import base64
-import re
-from PIL import Image
-from functools import lru_cache
-
 _image_cache: dict[str, str] = {}
 
 
@@ -528,20 +528,20 @@ async def _fetch_and_cache_image(url: str) -> str:
 
 
 async def _embed_images(html: str) -> str:
-    """将HTML中远程图片URL替换为base64 data URI"""
-    urls = re.findall(r'src="(https?://[^"]+)"', html)
-    if not urls:
-        return html
-    tasks = {url: _fetch_and_cache_image(url) for url in urls}
-    results = await asyncio.gather(*[tasks[u] for u in urls], return_exceptions=True)
-    mapping = {}
-    for url, result in zip(urls, results):
-        if not isinstance(result, Exception):
-            mapping[url] = result
+    """将远程图片URL替换为base64，最多等2秒"""
+    urls = list(set(re.findall(r'src="(https?://[^"]+)"', html)))
+    uncached = [u for u in urls if u not in _image_cache]
+
+    if uncached:
+        tasks = [_fetch_and_cache_image(u) for u in uncached]
+        try:
+            await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=2.0)
+        except asyncio.TimeoutError:
+            pass
 
     def _replace(m):
         url = m.group(1)
-        mapped = mapping.get(url)
+        mapped = _image_cache.get(url)
         return f'src="{mapped}"' if mapped else m.group(0)
 
     return re.sub(r'src="(https?://[^"]+)"', _replace, html)
