@@ -1,4 +1,5 @@
 """ALS 网站徽章抓取器 — 只抓 API 不提供的赛季徽章和特殊徽章图片"""
+
 from __future__ import annotations
 
 from .playwright_manager import run_with_page

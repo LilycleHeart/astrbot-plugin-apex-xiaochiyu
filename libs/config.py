@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+from PIL import ImageFont
+
 
 # ── Material Design 配色 ──
 SURFACE = "#0F1923"
@@ -75,12 +77,13 @@ FONT_SIZES = {
     "small": 11,
 }
 
-def load_font(size: int, bold: bool = False) -> "ImageFont.FreeTypeFont":
-    from PIL import ImageFont
 
+def load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
     candidates = list(FONT_PATHS)
     if bold:
-        bold_path = str(Path(__file__).parent.parent / "assets" / "fonts" / "NotoSansSC-Bold.ttf")
+        bold_path = str(
+            Path(__file__).parent.parent / "assets" / "fonts" / "NotoSansSC-Bold.ttf"
+        )
         candidates = [bold_path, "C:/Windows/Fonts/msyhbd.ttc"] + candidates
 
     for path in candidates:

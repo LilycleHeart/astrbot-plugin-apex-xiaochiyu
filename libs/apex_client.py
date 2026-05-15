@@ -85,14 +85,16 @@ class PlayerStats:
                 continue
             kills = 0
             for tracker in info.get("data", []):
-                if "kills" in tracker.get("key", "").lower() and "season" not in tracker.get("key", "").lower():
+                if (
+                    "kills" in tracker.get("key", "").lower()
+                    and "season" not in tracker.get("key", "").lower()
+                ):
                     kills = max(kills, tracker.get("value", 0))
             if kills > 0:
                 icon = info.get("ImgAssets", {}).get("icon", "")
                 result.append({"name": legend_name, "kills": kills, "icon": icon})
         result.sort(key=lambda x: x["kills"], reverse=True)
         return result[:3]
-
 
     @staticmethod
     def _extract_selected_legend(legends: dict) -> dict | None:
@@ -104,10 +106,12 @@ class PlayerStats:
         stats = []
         for tracker in sel.get("data", []):
             if not tracker.get("global", False):
-                stats.append({
-                    "name": tracker.get("name", ""),
-                    "value": tracker.get("value", 0),
-                })
+                stats.append(
+                    {
+                        "name": tracker.get("name", ""),
+                        "value": tracker.get("value", 0),
+                    }
+                )
         return {"name": name, "icon_url": icon, "stats": stats}
 
 
@@ -165,8 +169,10 @@ class ServerInfo:
         self.name = name
         # API may return "Status", "status", or only have ResponseTime
         raw_status = data.get("Status") or data.get("status") or ""
-        self.status = str(raw_status).upper() if raw_status else (
-            "UP" if data.get("ResponseTime", 0) > 0 else "UNKNOWN"
+        self.status = (
+            str(raw_status).upper()
+            if raw_status
+            else ("UP" if data.get("ResponseTime", 0) > 0 else "UNKNOWN")
         )
         self.response_time = data.get("ResponseTime", 0)
         self.https_code = data.get("HTTPSResponseCode", 0)
@@ -189,11 +195,13 @@ class ServerInfo:
     @property
     def display_name(self) -> str:
         name = self.name.rsplit(".", 1)[-1] if "." in self.name else self.name
-        return name.replace("_", " ") \
-                   .replace("Origin login", "Origin Login") \
-                   .replace("EA novafusion", "EA Novafusion") \
-                   .replace("EA accounts", "EA Accounts") \
-                   .replace("EA datacenter", "EA Datacenter")
+        return (
+            name.replace("_", " ")
+            .replace("Origin login", "Origin Login")
+            .replace("EA novafusion", "EA Novafusion")
+            .replace("EA accounts", "EA Accounts")
+            .replace("EA datacenter", "EA Datacenter")
+        )
 
 
 class ServerStatus:
@@ -248,7 +256,9 @@ class ApexClient:
             logger.error(f"[ApexClient] Request failed: {e}")
             raise
 
-    async def name_to_uid(self, name: str, platform: str = "PC") -> Optional[NameToUIDResult]:
+    async def name_to_uid(
+        self, name: str, platform: str = "PC"
+    ) -> Optional[NameToUIDResult]:
         try:
             data = await self._get("/nametouid", {"player": name, "platform": platform})
             if not data.get("uid"):
@@ -260,14 +270,15 @@ class ApexClient:
     async def get_stats(self, uid: str, platform: str = "PC") -> Optional[PlayerStats]:
         try:
             from .ttl_cache import get as cache_get, set as cache_set
+
             cache_key = f"stats:{platform}:{uid}"
             cached = await cache_get(cache_key)
             if cached is not None:
                 return PlayerStats(cached)
 
-            data = await self._get("/bridge", {
-                "uid": uid, "platform": platform, "merge": "1"
-            })
+            data = await self._get(
+                "/bridge", {"uid": uid, "platform": platform, "merge": "1"}
+            )
             stats = PlayerStats(data) if data else None
             if data:
                 await cache_set(cache_key, data, 60)
@@ -278,6 +289,7 @@ class ApexClient:
     async def get_map_rotation(self) -> Optional[MapRotation]:
         try:
             from .ttl_cache import get as cache_get, set as cache_set
+
             cache_key = "map_rotation"
             cached = await cache_get(cache_key)
             if cached is not None:
@@ -293,6 +305,7 @@ class ApexClient:
     async def get_predator(self) -> Optional[PredatorData]:
         try:
             from .ttl_cache import get as cache_get, set as cache_set
+
             cache_key = "predator"
             cached = await cache_get(cache_key)
             if cached is not None:
@@ -308,6 +321,7 @@ class ApexClient:
     async def get_server_status(self) -> Optional[ServerStatus]:
         try:
             from .ttl_cache import get as cache_get, set as cache_set
+
             cache_key = "server_status"
             cached = await cache_get(cache_key)
             if cached is not None:
@@ -315,20 +329,22 @@ class ApexClient:
 
             data = await self._get("/servers")
             if data:
-                logger.info(f"[ApexClient] Server status raw keys: {list(data.keys())[:5]}")
+                logger.info(
+                    f"[ApexClient] Server status raw keys: {list(data.keys())[:5]}"
+                )
                 await cache_set(cache_key, data, 120)
                 result = ServerStatus(data)
                 logger.info(f"[ApexClient] Parsed {len(result.servers)} servers")
                 return result
             return None
         except Exception:
-            logger.error(f"[ApexClient] Failed to get server status", exc_info=True)
+            logger.error("[ApexClient] Failed to get server status", exc_info=True)
             return None
-
 
     async def get_rank_distribution(self) -> Optional[RankDistribution]:
         try:
             from .ttl_cache import get as cache_get, set as cache_set
+
             cache_key = "rank_distribution"
             cached = await cache_get(cache_key)
             if cached is not None:
@@ -382,9 +398,17 @@ class RankDistribution:
             else:
                 major_map[major] = (color, pct, count)
 
-        tier_order = ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Predator"]
+        tier_order = [
+            "Rookie",
+            "Bronze",
+            "Silver",
+            "Gold",
+            "Platinum",
+            "Diamond",
+            "Master",
+            "Predator",
+        ]
         for tier in tier_order:
             if tier in major_map:
                 color, pct, count = major_map[tier]
                 self.entries.append(RankDistEntry(tier, color, round(pct, 2), count))
-

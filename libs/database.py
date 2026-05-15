@@ -79,7 +79,9 @@ class Database:
 
     async def get_user(self, qq_id: str) -> dict | None:
         conn = await self._get_conn()
-        async with conn.execute("SELECT * FROM users WHERE qq_id = ?", (qq_id,)) as cursor:
+        async with conn.execute(
+            "SELECT * FROM users WHERE qq_id = ?", (qq_id,)
+        ) as cursor:
             row = await cursor.fetchone()
         if row:
             return dict(row)
@@ -92,7 +94,9 @@ class Database:
 
     # ── 队伍操作 ──
 
-    async def create_team(self, name: str, owner_qq: str, ttl_hours: int = 12) -> int | None:
+    async def create_team(
+        self, name: str, owner_qq: str, ttl_hours: int = 12
+    ) -> int | None:
         existing = await self.get_team_by_member(owner_qq)
         if existing:
             return None
@@ -151,12 +155,16 @@ class Database:
 
         team_id = team["id"]
         conn = await self._get_conn()
-        await conn.execute("DELETE FROM team_members WHERE team_id = ? AND qq_id = ?", (team_id, qq_id))
+        await conn.execute(
+            "DELETE FROM team_members WHERE team_id = ? AND qq_id = ?", (team_id, qq_id)
+        )
         if team["owner_qq"] == qq_id:
             await conn.execute("DELETE FROM team_members WHERE team_id = ?", (team_id,))
             await conn.execute("DELETE FROM teams WHERE id = ?", (team_id,))
         else:
-            async with conn.execute("SELECT COUNT(*) FROM team_members WHERE team_id = ?", (team_id,)) as cursor:
+            async with conn.execute(
+                "SELECT COUNT(*) FROM team_members WHERE team_id = ?", (team_id,)
+            ) as cursor:
                 remaining = (await cursor.fetchone())[0]
             if remaining == 0:
                 await conn.execute("DELETE FROM teams WHERE id = ?", (team_id,))
@@ -179,11 +187,14 @@ class Database:
 
     async def get_team_by_member(self, qq_id: str) -> dict | None:
         conn = await self._get_conn()
-        async with conn.execute("""
+        async with conn.execute(
+            """
             SELECT t.id, t.name, t.owner_qq, t.ttl_hours, t.created_at, t.expires_at
             FROM teams t JOIN team_members m ON t.id = m.team_id
             WHERE m.qq_id = ?
-        """, (qq_id,)) as cursor:
+        """,
+            (qq_id,),
+        ) as cursor:
             row = await cursor.fetchone()
         if row:
             return dict(row)
@@ -213,8 +224,12 @@ class Database:
             tid = row[0]
             if tid not in teams_map:
                 teams_map[tid] = {
-                    "id": row[0], "name": row[1], "owner_qq": row[2],
-                    "ttl_hours": row[3], "created_at": row[4], "expires_at": row[5],
+                    "id": row[0],
+                    "name": row[1],
+                    "owner_qq": row[2],
+                    "ttl_hours": row[3],
+                    "created_at": row[4],
+                    "expires_at": row[5],
                     "members": [],
                 }
             member_qq = row[6]
@@ -262,12 +277,18 @@ class Database:
         expired = [{"id": row[0], "name": row[1], "owner_qq": row[2]} for row in rows]
 
         placeholders = ",".join("?" * len(expired_ids))
-        await conn.execute(f"DELETE FROM team_members WHERE team_id IN ({placeholders})", expired_ids)
-        await conn.execute(f"DELETE FROM teams WHERE id IN ({placeholders})", expired_ids)
+        await conn.execute(
+            f"DELETE FROM team_members WHERE team_id IN ({placeholders})", expired_ids
+        )
+        await conn.execute(
+            f"DELETE FROM teams WHERE id IN ({placeholders})", expired_ids
+        )
         await conn.commit()
         return expired
 
-    async def get_rp_delta(self, uid: str, platform: str, current_score: int) -> int | None:
+    async def get_rp_delta(
+        self, uid: str, platform: str, current_score: int
+    ) -> int | None:
         """距上次查询的 RP 变化，无记录返回 None"""
         conn = await self._get_conn()
         async with conn.execute(
