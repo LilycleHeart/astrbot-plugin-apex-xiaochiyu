@@ -494,7 +494,7 @@ class XiaoChiyu(Star):
         rn = rank_zh.get(
             profile_data["rank_name"].split(" ")[0], profile_data["rank_name"]
         )
-        rd = div_zh.get(profile_data["rank_div"], str(profile_data["rank_div"]))
+        rd = profile_data["rank_div"] if profile_data["rank_div"] > 0 else ""
         state = "在线" if profile_data["online"] in ("online", "in_game") else "离线"
         delta_str = f" (较上次查询 {rp_delta:+d} RP)" if rp_delta is not None else ""
 

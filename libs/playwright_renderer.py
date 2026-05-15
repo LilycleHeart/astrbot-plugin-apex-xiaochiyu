@@ -69,7 +69,7 @@ def _rank_zh(name: str) -> str:
 
 
 def _rank_div_zh(div: int) -> str:
-    return {0: "4", 1: "3", 2: "2", 3: "1"}.get(div, str(div))
+    return str(div) if div > 0 else ""
 
 
 def _legend_zh(name: str) -> str:
