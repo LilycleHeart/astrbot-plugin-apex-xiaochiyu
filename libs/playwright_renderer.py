@@ -479,11 +479,67 @@ def _render_moe_number_base64(number: int) -> str:
 
 
 # ══════════════════════════════════════════
+#  图片缓存 — 远程URL→base64，零网络请求渲染
+# ══════════════════════════════════════════
+
+import io
+import base64
+import re
+import httpx
+from PIL import Image
+from functools import lru_cache
+
+
+def _resize_for_card(img_bytes: bytes, max_w: int = 160) -> bytes:
+    """缩放图片并转PNG，减小base64体积"""
+    try:
+        img = Image.open(io.BytesIO(img_bytes))
+        w, h = img.size
+        if w > max_w:
+            ratio = max_w / w
+            img = img.resize((max_w, int(h * ratio)), Image.LANCZOS)
+        if img.mode != "RGBA":
+            img = img.convert("RGBA")
+        buf = io.BytesIO()
+        img.save(buf, format="PNG", optimize=True)
+        return buf.getvalue()
+    except Exception:
+        return img_bytes
+
+
+@lru_cache(maxsize=128)
+def _get_cached_image(url: str) -> str:
+    """下载远程图片并缓存为base64 data URI"""
+    if url.startswith("data:"):
+        return url
+    try:
+        with httpx.Client(timeout=5.0, follow_redirects=True) as client:
+            resp = client.get(url)
+            resp.raise_for_status()
+            data = _resize_for_card(resp.content)
+            b64 = base64.b64encode(data).decode()
+            return f"data:image/png;base64,{b64}"
+    except Exception:
+        return url  # fallback: keep original URL
+
+
+def _embed_images(html: str) -> str:
+    """将HTML中远程图片URL替换为base64 data URI"""
+    def _replace(m):
+        url = m.group(1)
+        if url.startswith("http"):
+            return f'src="{_get_cached_image(url)}"'
+        return m.group(0)
+    return re.sub(r'src="(https?://[^"]+)"', _replace, html)
+
+
+# ══════════════════════════════════════════
 #  公开接口
 # ══════════════════════════════════════════
 
 
 async def _render_card_sync(html: str, width: int) -> bytes:
+    html = _embed_images(html)
     async with run_with_page(viewport={"width": width, "height": 100}, device_scale_factor=2) as page:
         await page.set_content(html, wait_until="domcontentloaded", timeout=15000)
         await page.wait_for_selector(".card", timeout=10000)
