@@ -1,7 +1,9 @@
 # 小赤羽 / AstrBot Apex 数据查询插件
 
 AstrBot 插件 —— 一个专注于 《Apex Legends》 数据查询、组队与状态追踪的多功能 Bot。
-
+<p align="center">
+  <img src="https://count.getloli.com/@apex-xiaochiyu?theme=rule34&name=apex-xiaochiyu" alt="Moe Counter" />
+</p>
 [![AstrBot](https://img.shields.io/badge/AstrBot-%3E%3D4.24-blue)](https://astrbot.app)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB)](https://www.python.org/)
 [![License](https://img.shields.io/github/license/LilycleHeart/astrbot-plugin-apex-xiaochiyu)](https://github.com/LilycleHeart/astrbot-plugin-apex-xiaochiyu)
