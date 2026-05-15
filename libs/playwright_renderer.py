@@ -485,15 +485,15 @@ def _render_moe_number_base64(number: int) -> str:
 import io
 import base64
 import re
-import httpx
 from PIL import Image
 from functools import lru_cache
 
+_image_cache: dict[str, str] = {}
 
-def _resize_for_card(img_bytes: bytes, max_w: int = 160) -> bytes:
-    """缩放图片并转PNG，减小base64体积"""
+
+def _resize_for_card(data: bytes, max_w: int = 160) -> bytes:
     try:
-        img = Image.open(io.BytesIO(img_bytes))
+        img = Image.open(io.BytesIO(data))
         w, h = img.size
         if w > max_w:
             ratio = max_w / w
@@ -504,42 +504,51 @@ def _resize_for_card(img_bytes: bytes, max_w: int = 160) -> bytes:
         img.save(buf, format="PNG", optimize=True)
         return buf.getvalue()
     except Exception:
-        return img_bytes
+        return data
 
 
-@lru_cache(maxsize=128)
-def _get_cached_image(url: str) -> str:
-    """下载远程图片并缓存为base64 data URI"""
+async def _fetch_and_cache_image(url: str) -> str:
+    """异步下载图片并缓存为base64"""
     if url.startswith("data:"):
         return url
+    cached = _image_cache.get(url)
+    if cached:
+        return cached
+    from .http_client import get_async_client
     try:
-        with httpx.Client(timeout=5.0, follow_redirects=True) as client:
-            resp = client.get(url)
-            resp.raise_for_status()
-            data = _resize_for_card(resp.content)
-            b64 = base64.b64encode(data).decode()
-            return f"data:image/png;base64,{b64}"
+        client = await get_async_client()
+        resp = await client.get(url, timeout=5.0)
+        resp.raise_for_status()
+        data = _resize_for_card(resp.content)
+        b64 = base64.b64encode(data).decode()
+        _image_cache[url] = f"data:image/png;base64,{b64}"
+        return _image_cache[url]
     except Exception:
-        return url  # fallback: keep original URL
+        return url
 
 
-def _embed_images(html: str) -> str:
+async def _embed_images(html: str) -> str:
     """将HTML中远程图片URL替换为base64 data URI"""
+    urls = re.findall(r'src="(https?://[^"]+)"', html)
+    if not urls:
+        return html
+    tasks = {url: _fetch_and_cache_image(url) for url in urls}
+    results = await asyncio.gather(*[tasks[u] for u in urls], return_exceptions=True)
+    mapping = {}
+    for url, result in zip(urls, results):
+        if not isinstance(result, Exception):
+            mapping[url] = result
+
     def _replace(m):
         url = m.group(1)
-        if url.startswith("http"):
-            return f'src="{_get_cached_image(url)}"'
-        return m.group(0)
+        mapped = mapping.get(url)
+        return f'src="{mapped}"' if mapped else m.group(0)
+
     return re.sub(r'src="(https?://[^"]+)"', _replace, html)
 
 
-# ══════════════════════════════════════════
-#  公开接口
-# ══════════════════════════════════════════
-
-
 async def _render_card_sync(html: str, width: int) -> bytes:
-    html = _embed_images(html)
+    html = await _embed_images(html)
     async with run_with_page(viewport={"width": width, "height": 100}, device_scale_factor=2) as page:
         await page.set_content(html, wait_until="domcontentloaded", timeout=15000)
         await page.wait_for_selector(".card", timeout=10000)
