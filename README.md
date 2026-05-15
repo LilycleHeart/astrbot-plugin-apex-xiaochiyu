@@ -1,6 +1,7 @@
 # 小赤羽 / Astrobot Apex数据查询插件
 
 <p align="center">
+  <img src="https://count.getloli.com/get/@LilycleHeart-astrbot-plugin-apex-xiaochiyu?theme=rule34" alt="Moe Counter" /><br>
   <a href="https://github.com/LilycleHeart/astrbot-plugin-apex-xiaochiyu">
     <img src="https://img.shields.io/github/stars/LilycleHeart/astrbot-plugin-apex-xiaochiyu?style=social" alt="GitHub stars">
   </a>
