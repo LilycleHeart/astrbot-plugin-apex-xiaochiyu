@@ -362,6 +362,7 @@ class XiaoChiyu(Star):
     @filter.on_astrbot_loaded()
     async def start_cleaner(self):
         asyncio.create_task(self._auto_clean_expired_teams())
+        asyncio.create_task(self._auto_clean_temp_files())
 
     async def _auto_clean_expired_teams(self):
         while True:
@@ -372,6 +373,20 @@ class XiaoChiyu(Star):
                     logger.info(f"[小赤羽] 队伍 '{team['name']}' 已过期，自动解散")
             except Exception as e:
                 logger.error(f"[小赤羽] 清理过期队伍失败: {e}")
+
+    async def _auto_clean_temp_files(self):
+        """每5分钟清理超过30分钟的临时PNG文件"""
+        import time
+        from pathlib import Path
+        while True:
+            await asyncio.sleep(300)
+            try:
+                now = time.time()
+                for f in Path(self._temp_dir).glob("*.png"):
+                    if now - f.stat().st_mtime > 1800:
+                        f.unlink(missing_ok=True)
+            except Exception as e:
+                logger.error(f"[小赤羽] 清理临时文件失败: {e}")
 
     # ═══════════════════════════════════════════════
     #  LLM 工具 — 返文本数据给LLM，图片缓存用于send_message_to_user

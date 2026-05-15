@@ -484,10 +484,9 @@ def _render_moe_number_base64(number: int) -> str:
 
 
 async def _render_card_sync(html: str, width: int) -> bytes:
-    async with run_with_page(
-        viewport={"width": width, "height": 100}, device_scale_factor=2
-    ) as page:
-        await page.set_content(html, wait_until="networkidle", timeout=15000)
+    async with run_with_page(viewport={"width": width, "height": 100}, device_scale_factor=2) as page:
+        await page.set_content(html, wait_until="domcontentloaded", timeout=15000)
+        await page.wait_for_selector(".card", timeout=10000)
         card_height = await page.evaluate(
             "() => document.querySelector('.card')?.offsetHeight || 600"
         )
