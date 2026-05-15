@@ -1,112 +1,187 @@
-```markdown
-<p align="center">
-  <img src="https://capsule-render.github.io/api?type=rounded&text=小赤羽%20/%20AstrBot%20Apex&color=6750A4&fontColor=ffffff&height=140&fontSize=48" width="100%" alt="Header" />
-</p>
+# 小赤羽 / AstrBot Apex 数据查询插件
 
-<p align="center">
-  <a href="https://astrbot.app">
-    <img src="https://img.shields.io/badge/AstrBot-%3E%3D4.24-6750A4?style=for-the-badge&logo=android" alt="AstrBot Version" />
-  </a>
-  <img src="https://count.getloli.com/get/@xiaochiyu-apex-bot?theme=rule34" height="28" alt="Moe Counter" />
-</p>
+AstrBot 插件 —— 一个专注于 《Apex Legends》 数据查询、组队与状态追踪的多功能 Bot。
 
-<p align="center">
-  🪐 <b>AstrBot 插件 — 一款优雅、全能的 Apex Legends 数据查询助理</b>
-</p>
+[![AstrBot](https://img.shields.io/badge/AstrBot-%3E%3D4.24-blue)](https://astrbot.app)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB)](https://www.python.org/)
+[![License](https://img.shields.io/github/license/LilycleHeart/astrbot-plugin-apex-xiaochiyu)](https://github.com/LilycleHeart/astrbot-plugin-apex-xiaochiyu)
 
 ---
 
-<table width="100%" style="border-collapse: collapse; border: none; margin-bottom: 24px;">
-  <tr style="background-color: #F3EDF7; border: none;">
-    <td style="padding: 20px; border-radius: 16px; border: none; color: #1D1B20;">
-      <h4 style="margin: 0 0 8px 0; font-size: 16px; display: flex; align-items: center; gap: 8px;">
-        🤖 <b>Material 3 智能语义驱动</b>
-      </h4>
-      <p style="margin: 0; font-size: 14px; color: #49454F; line-height: 1.6;">
-        配置 LLM（大语言模型）后，Bot 将完美支持自然语言交互。无论是 <i>“看看我的战绩”</i>、<i>“服务器炸了吗”</i> 还是 <i>“现在什么地图”</i>，Bot 都能自动识别意图，<b>先以拟人化口吻评论数据，再呈递精致的卡片</b>。
-      </p>
-    </td>
-  </tr>
-</table>
+## ✨ 功能特性
 
-## 🛠️ 功能特性
+### 📊 战绩查询
 
-### 🎯 核心指令
+查询玩家实时数据，并生成高质量战绩卡片：
+
+- 当前段位、RP 分数、分数变动
+- 生涯击杀 / 总伤害 / BR 胜场
+- 常用英雄 TOP3
+- 当前赛季徽章
+- 附近段位分布参考
+- 当前选用传奇角色
+
+### 🗺️ 地图轮换
+
+实时获取：
+
+- 匹配地图
+- 排位地图
+- 限时模式地图
+- 剩余轮换时间
+
+并自动生成带官方背景图的地图卡片。
+
+### 🌐 服务器状态
+
+快速查看：
+
+- EA 服务器状态
+- 数据中心在线情况
+- 是否存在异常或炸服
+
+### 👑 猎杀 / 大师数据
+
+提供：
+
+- 四平台猎杀分数线
+- 大师 / 猎杀人数统计
+- Moe Counter 风格数字卡片
+
+### 👥 组队系统
+
+支持简单队伍管理：
+
+- 创建队伍
+- 加入 / 退出队伍
+- 队伍状态同步
+
+### 🤖 LLM 自然语言支持
+
+配置 LLM 后，可直接使用自然语言触发功能：
+
+```text
+看看我的战绩
+现在什么地图
+服务器炸了吗
+大师多少分了
+```
+
+Bot 会自动识别意图，优先返回文字总结，再发送数据卡片。
+
+---
+
+## 📖 指令列表
 
 | 指令 | 说明 |
-| :--- | :--- |
-| `/stats [玩家名]` | 查询战绩，生成卡片数据 |
+|---|---|
+| `/stats [玩家名]` | 查询玩家战绩 |
 | `/bind <玩家名> [PC/PS4/X1]` | 绑定 Apex 账号 |
-| `/bind_uid <UID> [平台]` | 直接通过 UID 绑定 |
+| `/bind_uid <UID> [平台]` | 使用 UID 绑定 |
 | `/unbind` | 解绑账号 |
-| `/map` | 地图轮换（匹配 / 排位 / 限时模式） |
-| `/server` | Apex 服务器状态 |
-| `/master` | 各平台猎杀分数线线 + 大师（猎杀）总人数 |
+| `/map` | 查看地图轮换 |
+| `/server` | 查看服务器状态 |
+| `/master` | 查看猎杀分数线与大师人数 |
 | `/team ...` | 组队系统 |
 
 ---
 
-### 🎨 视觉卡片设计
+## 🖼️ 卡片展示
 
-* **📊 战绩卡片**
-  * 完整展示玩家信息、段位（白金3 格式）、RP 分数及实时变动。
-  * 生涯击杀、总伤害、BR 胜场等核心数据一目了然。
-  * 内置段位分布参考（实时数据，仅显示附近 4 个段位）。
-  * 追踪常用英雄 TOP3、赛季徽章及当前选用皮肤。
-* **🗺️ 地图卡片**
-  * 适配 EA 官方最新的地图背景图，采用全中文地图名，附带精确的实时倒计时。
-* **👑 大师数据卡片**
-  * 融合 `Moe Counter (rule34)` 数字风格，实时监控四大平台猎杀分数线与大师总人数。
+### 战绩卡片
+
+- 玩家基础信息
+- 段位 / RP
+- 生涯数据
+- 英雄数据
+- 徽章展示
+- 段位分布参考
+
+### 地图卡片
+
+- 官方地图背景
+- 中文地图名
+- 实时倒计时
+
+### 大师数据卡片
+
+- Moe Counter 数字风格
+- 四平台猎杀线
+- 大师人数统计
 
 ---
 
-## 🚀 快速安装
+## 📦 安装
 
-1. 进入 **AstrBot WebUI** → **插件管理**。
-2. 点击 **上传插件**，选择 `astrbot-plugin-apex-xiaochiyu.zip` 进行上传；或者直接在 **AstrBot 插件市场** 搜索添加。
-3. > ⚠️ **重要依赖环境**：安装完成后，必须在系统终端执行以下命令以下载 WebKit 内核：
-   ```bash
-   python -m playwright install webkit
+### 方法一：插件市场安装
 
+在 AstrBot 插件市场搜索：
+
+```text
+小赤羽
+```
+
+### 方法二：手动安装
+
+下载仓库 ZIP：
+
+```text
+astrbot-plugin-apex-xiaochiyu.zip
+```
+
+然后在 AstrBot WebUI：
+
+```text
+插件管理 → 上传插件
 ```
 
 ---
 
-## ⚙️ 插件配置
-
-在插件配置面板中填入你的 API Key：
+## ⚙️ 配置
 
 ```json
 {
-  "apex_api_key": "YOUR_KEY"
+  "apex_api_key": "YOUR_API_KEY"
 }
-
 ```
 
-> 💡 **API Key 获取方式**：可在 [apexlegendsapi.com](https://portal.apexlegendsapi.com) 免费注册获取。
+API Key 免费获取：
+
+- https://portal.apexlegendsapi.com
 
 ---
 
-## 📦 项目依赖
+## 🔧 依赖
 
-| 依赖包 | 最低版本 | 用途说明 |
-| --- | --- | --- |
-| `httpx` | `>=0.28.0` | 处理高效的 API HTTP 异步请求 |
-| `aiosqlite` | `>=0.20.0` | SQLite 异步数据库本地数据持久化 |
-| `Pillow` | `>=10.0.0` | 图片轻量化渲染及回退方案 |
-| `playwright` | `>=1.48.0` | 核心引擎：将 HTML 异步渲染为高保真 PNG 卡片 |
-| `mcp` | `>=1.20.0` | 标准化 LLM 工具返回值类型 |
+| 包 | 用途 |
+|---|---|
+| `httpx>=0.28.0` | HTTP API 请求 |
+| `aiosqlite>=0.20.0` | SQLite 异步数据库 |
+| `Pillow>=10.0.0` | 图片渲染回退 |
+| `playwright>=1.48.0` | HTML → PNG 卡片渲染 |
+| `mcp>=1.20.0` | LLM 工具返回值类型 |
+
+安装依赖后，还需要安装 WebKit：
+
+```bash
+python -m playwright install webkit
+```
 
 ---
 
-## 🌐 数据来源与致谢
+## 📚 数据来源
 
-本插件的高效运行离不开以下优秀公开服务与开源项目的支持：
+- 战绩 / 地图 / 服务器  
+  https://apexlegendsstatus.com
 
-* **战绩 / 地图 / 服务器数据**：[Apex Legends Status](https://apexlegendsstatus.com)
-* **Moe Counter 经典数字**：[journey-ad/Moe-Counter](https://github.com/journey-ad/Moe-Counter)
-* **精美地图背景**：[EA Apex Maps Hub](https://www.ea.com/zh-hant/games/apex-legends/apex-legends/game-objects/maps-hub)
+- Moe Counter 数字样式  
+  https://github.com/journey-ad/Moe-Counter
 
-```
+- 地图背景资源  
+  https://www.ea.com/zh-hant/games/apex-legends/apex-legends/game-objects/maps-hub
 
-```
+---
+
+## ⭐ Star 支持
+
+如果这个插件对你有帮助，欢迎点个 Star 支持一下项目。
