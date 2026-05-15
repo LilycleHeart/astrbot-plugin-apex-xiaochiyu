@@ -1,16 +1,16 @@
 # 小赤羽 — Apex Legends QQ Bot 插件
 
-<<<<<<< Updated upstream
 AstrBot 插件 — Apex Legends 多功能 Bot。
-
-[![AstrBot](https://img.shields.io/badge/AstrBot-%3E%3D4.24-blue)](https://astrbot.app)
-=======
 <p align="center">
   <img src="https://count.getloli.com/@apex-xiaochiyu?theme=rule34&name=apex-xiaochiyu" alt="Moe Counter" />
 </p>
 
+[![AstrBot](https://img.shields.io/badge/AstrBot-%3E%3D4.24-blue)](https://astrbot.app)
+=======
+
+
 基于 AstrBot 的 Apex Legends 多功能插件，支持战绩查询、地图轮换、服务器状态、大师猎杀数据、组队系统，以及 LLM 自然语言交互。
->>>>>>> Stashed changes
+
 
 ## 功能
 
