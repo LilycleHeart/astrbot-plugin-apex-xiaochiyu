@@ -1,4 +1,4 @@
-# 小赤羽 / apex_xiaochiyu
+# 小赤羽 / Astrobot Apex数据查询插件
 
 AstrBot 插件 — Apex Legends 多功能 Bot。
 
@@ -8,13 +8,13 @@ AstrBot 插件 — Apex Legends 多功能 Bot。
 
 | 指令 | 说明 |
 |---|---|
-| `/stats [玩家名]` | 查询战绩，生成 Material Design 卡片 |
+| `/stats [玩家名]` | 查询战绩，生成卡片数据 |
 | `/bind <玩家名> [PC/PS4/X1]` | 绑定 Apex 账号 |
 | `/bind_uid <UID> [平台]` | 直接通过 UID 绑定 |
 | `/unbind` | 解绑账号 |
 | `/map` | 地图轮换（匹配 / 排位 / 限时模式） |
 | `/server` | Apex 服务器状态 |
-| `/master` | 各平台猎杀线 + 大师人数 |
+| `/master` | 各平台猎杀分数线线 + 大师（猎杀）总人数 |
 | `/team ...` | 组队系统 |
 
 配置 LLM 后支持自然语言：`看看我的战绩` `服务器炸了吗` `现在什么地图` `大师多少个` — Bot 自动识别意图，先评论数据再发卡片。
@@ -32,11 +32,12 @@ AstrBot 插件 — Apex Legends 多功能 Bot。
 
 ### 大师数据卡片
 
-Moe Counter (rule34) 数字风格，四平台猎杀线 + 大师人数。
+Moe Counter (rule34) 数字风格，四平台猎杀分数线 + 大师人数。
 
 ## 安装
 
 在 AstrBot WebUI → 插件管理 → 上传 `astrbot-plugin-apex-xiaochiyu.zip`
+或在Astrobot插件市场添加
 
 ## 配置
 
