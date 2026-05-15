@@ -53,10 +53,13 @@ Moe Counter (rule34) 数字风格展示四平台猎杀线和大师人数。
 
 ## 依赖
 
-- `httpx` — HTTP 请求
-- `aiosqlite` — SQLite 异步数据库
-- `Pillow` — 图片渲染（回退方案）
-- AstrBot 自带的 Playwright — HTML→PNG 卡片渲染
+| 包 | 用途 |
+|---|---|
+| `httpx>=0.28.0` | API HTTP 请求 |
+| `aiosqlite>=0.20.0` | SQLite 异步数据库 |
+| `Pillow>=10.0.0` | 图片渲染（Playwright 不可用时的回退方案） |
+
+> Playwright 和 `mcp` 由 AstrBot 自带，无需额外安装。
 
 ## 配置
 

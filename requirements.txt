@@ -1,3 +1,10 @@
+# Apex API 请求
 httpx>=0.28.0
+
+# SQLite 异步数据库
 aiosqlite>=0.20.0
+
+# Pillow 图片渲染（Playwright 不可用时的回退方案）
 Pillow>=10.0.0
+
+# 注意：Playwright 和 mcp 由 AstrBot 框架自带，无需额外安装
