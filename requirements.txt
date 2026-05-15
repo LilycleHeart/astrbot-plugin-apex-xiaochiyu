@@ -7,4 +7,8 @@ aiosqlite>=0.20.0
 # Pillow 图片渲染（Playwright 不可用时的回退方案）
 Pillow>=10.0.0
 
-# 注意：Playwright 和 mcp 由 AstrBot 框架自带，无需额外安装
+# HTML→PNG 卡片渲染
+playwright>=1.48.0
+
+# LLM 工具 CallToolResult 类型
+mcp>=1.20.0

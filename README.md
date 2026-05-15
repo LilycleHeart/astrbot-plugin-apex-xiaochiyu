@@ -57,9 +57,11 @@ Moe Counter (rule34) 数字风格展示四平台猎杀线和大师人数。
 |---|---|
 | `httpx>=0.28.0` | API HTTP 请求 |
 | `aiosqlite>=0.20.0` | SQLite 异步数据库 |
-| `Pillow>=10.0.0` | 图片渲染（Playwright 不可用时的回退方案） |
+| `Pillow>=10.0.0` | 图片渲染回退方案 |
+| `playwright>=1.48.0` | HTML→PNG 卡片渲染 |
 
-> Playwright 和 `mcp` 由 AstrBot 自带，无需额外安装。
+> 安装后需执行 `python -m playwright install webkit` 下载 WebKit 浏览器内核。
+| `mcp>=1.20.0` | LLM 工具 CallToolResult 类型 |
 
 ## 配置
 
