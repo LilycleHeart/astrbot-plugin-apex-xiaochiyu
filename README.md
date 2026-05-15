@@ -1,5 +1,11 @@
 # 小赤羽 / Astrobot Apex数据查询插件
 
+<p align="center">
+  <a href="https://github.com/LilycleHeart/astrbot-plugin-apex-xiaochiyu">
+    <img src="https://img.shields.io/github/stars/LilycleHeart/astrbot-plugin-apex-xiaochiyu?style=social" alt="GitHub stars">
+  </a>
+</p>
+
 AstrBot 插件 — Apex Legends 多功能 Bot。
 
 [![AstrBot](https://img.shields.io/badge/AstrBot-%3E%3D4.24-blue)](https://astrbot.app)
