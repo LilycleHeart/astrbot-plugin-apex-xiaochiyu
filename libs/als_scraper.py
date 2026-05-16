@@ -90,10 +90,28 @@ async def search_players(name: str, platform: str = "PC") -> list[dict]:
             except Exception:
                 pass
             result = await page.evaluate("""() => {
-                const name = (document.querySelector('.player-name') || {}).textContent?.trim();
-                const uid = (document.getElementById('puid') || {}).value;
-                if (name && uid) return [{name, uid, platform: '""" + platform + """'}];
-                return [];
+                const items = [];
+                // 1. 搜索页: 找所有玩家链接 (href含profile/uid)
+                document.querySelectorAll('a[href*="profile/uid"]').forEach(a => {
+                    const m = (a.href || '').match(/profile\\/uid\\/(\\w+)\\/(\\d+)/);
+                    if (m) items.push({name: a.textContent.trim(), uid: m[2], platform: m[1]});
+                });
+                // 2. 搜索页: 找 .search-result 行
+                document.querySelectorAll('.search-result, .player-search-result, [class*="search"] a[href*="/profile/"]').forEach(a => {
+                    const m = (a.href || '').match(/profile\\/(?:uid\\/)?(\\w+)\\/(\\d+)/);
+                    if (m && !items.find(i => i.uid === m[2])) {
+                        items.push({name: a.textContent.trim(), uid: m[2], platform: m[1]});
+                    }
+                });
+                // 3. 如果是直接玩家页
+                if (!items.length) {
+                    const name = (document.querySelector('.player-name') || {}).textContent?.trim();
+                    const uid = (document.getElementById('puid') || {}).value;
+                    if (name && uid) items.push({name, uid, platform: '""" + platform + """'});
+                }
+                // 去重
+                const seen = new Set();
+                return items.filter(i => { const k = i.uid; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 10);
             }""")
             return result
         except Exception as e:
