@@ -12,14 +12,14 @@ from PIL import Image
 from .config import RANK_COLORS
 from .playwright_manager import run_with_page
 
-# ── MD3 深色主题配色 (默认: Apex红) ──
-_C_SURFACE = "#141010"
-_C_CARD = "#1E1616"
-_C_CARD2 = "#251B1C"
-_C_CARD3 = "#312526"
-_C_TEXT = "#EDE0DF"
-_C_MUTED = "#D4C2C1"
-_C_OUTLINE = "#554747"
+# ── MD3 深色主题配色 (默认: 钻石冰蓝) ──
+_C_SURFACE = "#0F1218"
+_C_CARD = "#171A22"
+_C_CARD2 = "#1D222C"
+_C_CARD3 = "#272D39"
+_C_TEXT = "#DDE4F3"
+_C_MUTED = "#BFC7DA"
+_C_OUTLINE = "#444C5C"
 _C_GOLD = "#E7C150"
 _C_DIAMOND = "#5D9FF0"
 _C_MASTER = "#C58BFF"
