@@ -68,6 +68,39 @@ def _text_bbox(
     return bbox[2] - bbox[0], bbox[3] - bbox[1]
 
 
+def _truncate_text(
+    draw: ImageDraw.Draw, text: str, font: ImageFont.FreeTypeFont, max_w: int
+) -> str:
+    if not text:
+        return text
+    tw, _ = _text_bbox(draw, text, font)
+    if tw <= max_w:
+        return text
+    for i in range(len(text) - 1, 0, -1):
+        trial = text[:i] + "\u2026"
+        tw2, _ = _text_bbox(draw, trial, font)
+        if tw2 <= max_w:
+            return trial
+    return "\u2026"
+
+
+def _parse_rank_name(rank_img: str) -> str:
+    """从段位图URL提取段位名，如 diamond4 → Diamond 4"""
+    import re
+    m = re.search(r"ranks/(\w+?)(\d+)\.png", rank_img)
+    if not m:
+        return ""
+    tier = m.group(1).capitalize()
+    div = m.group(2)
+    rank_zh = {
+        "Rookie": "Rookie", "Bronze": "Bronze", "Silver": "Silver",
+        "Gold": "Gold", "Platinum": "Platinum", "Diamond": "Diamond",
+        "Master": "Master", "Predator": "Predator",
+    }
+    tier = rank_zh.get(tier, tier)
+    return f"{tier} {div}"
+
+
 def _draw_centered_text(
     draw: ImageDraw.Draw,
     text: str,
@@ -1426,9 +1459,274 @@ async def draw_text_card(title: str, message: str, is_error: bool = False) -> by
     )
 
 
-def _draw_text_sync(title: str, message: str, is_error: bool = False) -> bytes:
+async def draw_player_list_card(
+    players: list[dict], hint: str = ""
+) -> bytes:
+    """使用 Playwright 渲染玩家列表卡片"""
+    from .playwright_manager import run_with_page
+
+    plat_colors = {
+        "PC": "#4DABF7", "PS4": "#4ECDC4", "X1": "#4CE5B1",
+    }
+    rank_colors = {
+        "Rookie": "#89A0B0", "Bronze": "#CD7F32", "Silver": "#C0C0C0",
+        "Gold": "#FFD700", "Platinum": "#4ECDC4", "Diamond": "#74B9FF",
+        "Master": "#A855F7", "Predator": "#DA292A",
+    }
+
+    cards_html = ""
+    for i, r in enumerate(players):
+        name = r.get("name", "?")
+        uid = r.get("uid", "?")
+        plat = r.get("platform", "PC").upper()
+        pc = plat_colors.get(plat, "#89A0B0")
+        css = plat.lower()
+        level = str(r.get("level", ""))
+        prestige = str(r.get("prestige", ""))
+        rp_val = str(r.get("rp", ""))
+        rank_img = r.get("rank_img", "")
+        rank_name = _parse_rank_name(rank_img)
+
+        lvl_str = ""
+        if prestige:
+            lvl_str = f"P{prestige} "
+        if level:
+            lvl_str += f"Lv.{level}"
+        lvl_html = f'<span class="level">{lvl_str}</span>' if lvl_str else ""
+
+        rank_html = ""
+        if rank_name:
+            rc = rank_colors.get(rank_name.split()[0] if rank_name else "", "#89A0B0")
+            rank_html += f'<span class="rank-badge" style="color:{rc}">\u2666 {rank_name}</span>'
+        if rp_val:
+            rp_fmt = f"{int(rp_val):,} RP" if rp_val.isdigit() else rp_val
+            rank_html += f'<span class="rp">{(" \u00b7 " if rank_html else "") + rp_fmt}</span>'
+
+        cards_html += f"""<div class="player-card">
+            <div class="badge">{i+1}</div>
+            <div class="info">
+                <div class="name">{name}{lvl_html}</div>
+                {'<div class="rank">' + rank_html + '</div>' if rank_html else ''}
+                <div class="uid">UID: {uid}</div>
+            </div>
+            <div class="platform {css}">{plat}</div>
+        </div>"""
+
+    n = len(players)
+    title = f"找到 {n} 个玩家"
+    hint_html = f'<div class="hint">{hint}</div>' if hint else ""
+
+    html = f"""<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+* {{ margin:0; padding:0; box-sizing:border-box; }}
+body {{
+    background: #0F1923; font-family: "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    display: flex; justify-content: center; padding: 16px 8px; -webkit-font-smoothing: antialiased;
+}}
+.card-container {{
+    width: 500px; background: #1A2635; border-radius: 16px;
+    padding: 24px; box-shadow: 3px 5px 20px #060D14;
+}}
+.title {{
+    text-align: center; font-size: 22px; font-weight: 700;
+    color: #4CE5B1; margin-bottom: 20px;
+}}
+.player-card {{
+    display: flex; align-items: center;
+    background: #1D2E3F; border-radius: 10px;
+    padding: 13px 16px; margin-bottom: 10px; min-height: 80px;
+}}
+.badge {{
+    width: 36px; height: 36px; border-radius: 50%;
+    background: #4CE5B1; color: #0F1923;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; flex-shrink: 0; margin-right: 14px;
+}}
+.info {{
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; justify-content: center; gap: 2px;
+}}
+.name {{
+    font-size: 15px; font-weight: 600; color: #FFFFFF;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}}
+.level {{ color: #7A8FA0; font-size: 12px; font-weight: 400; margin-left: 8px; }}
+.rank {{ font-size: 12px; }}
+.rank-badge {{ font-weight: 600; }}
+.rp {{ color: #C4D0DB; }}
+.uid {{ font-size: 11px; color: #89A0B0; }}
+.platform {{
+    font-size: 12px; font-weight: 600;
+    padding: 4px 12px; border-radius: 6px;
+    flex-shrink: 0; margin-left: 14px;
+}}
+.platform.pc  {{ color:#4DABF7; background:#4DABF740; }}
+.platform.x1  {{ color:#4CE5B1; background:#4CE5B140; }}
+.platform.ps4 {{ color:#4ECDC4; background:#4ECDC440; }}
+.hint {{
+    text-align: center; font-size: 12px; color: #89A0B0;
+    margin-top: 18px; padding-top: 14px; border-top: 1px solid #2A3A4A;
+}}
+</style></head><body><div class="card-container">
+    <div class="title">{title}</div>
+    {cards_html}
+    {hint_html}
+</div></body></html>"""
+
+    try:
+        async with run_with_page(viewport={"width": 560, "height": 800}, device_scale_factor=2) as page:
+            await page.set_content(html, wait_until="networkidle")
+            card = await page.query_selector(".card-container")
+            if card:
+                return await card.screenshot(type="png")
+            return await page.screenshot(type="png", full_page=True)
+    except Exception:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(_executor, _draw_player_list_sync, players, hint)
+
+
+def _draw_player_list_sync(players: list[dict], hint: str) -> bytes:
+    # ── MD3 常量 ──
+    SURFACE_VARIANT = "#1D2E3F"
+    PILL_RADIUS = 10
+    CARD_GAP_SM = 10
+    ITEM_CARD_H = 88
+    ITEM_CARD_PAD = 14
+
+    n = len(players)
+    title_h = FONT_SIZES["title"] + CARD_GAP
+    body_h = n * (ITEM_CARD_H + CARD_GAP_SM)
+    hint_h = (FONT_SIZES["caption"] + 20) if hint else 0
+
     w = BIND_CARD_W
-    h = PADDING * 6 + FONT_SIZES["title"] + FONT_SIZES["body"] + CARD_GAP + 20
+    h = PADDING * 3 + title_h + body_h + hint_h + 20
+
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    _draw_surface(draw, w, h)
+
+    card_x0, card_y0 = PADDING // 2, PADDING // 2
+    card_w0 = w - PADDING
+    card_h0 = h - PADDING
+    _draw_shadow(draw, card_x0, card_y0, card_w0, card_h0)
+    _draw_card_bg(draw, card_x0, card_y0, card_w0, card_h0)
+
+    cx = card_x0 + PADDING
+    cy = card_y0 + PADDING
+
+    title_text = f"找到 {n} 个玩家"
+    _draw_centered_text(draw, title_text, card_x0, cy, card_w0, FONT_TITLE, fill=ACCENT_GREEN)
+    cy += FONT_SIZES["title"] + CARD_GAP + 4
+
+    for i, r in enumerate(players):
+        name = r.get("name", "?")
+        uid = r.get("uid", "?")
+        plat = r.get("platform", "PC")
+        plat_color = PLATFORM_COLORS.get(plat, MUTED)
+        level = str(r.get("level", ""))
+        prestige = str(r.get("prestige", ""))
+
+        item_left = cx
+        item_top = cy
+        item_w = card_w0 - PADDING * 2
+        item_h = ITEM_CARD_H
+
+        draw.rounded_rectangle(
+            [item_left, item_top, item_left + item_w, item_top + item_h],
+            radius=PILL_RADIUS,
+            fill=SURFACE_VARIANT,
+        )
+
+        badge_size = 36
+        badge_x = item_left + ITEM_CARD_PAD
+        badge_y = item_top + (item_h - badge_size) // 2
+        draw.ellipse(
+            [badge_x, badge_y, badge_x + badge_size, badge_y + badge_size],
+            fill=ACCENT_GREEN,
+        )
+        num_str = str(i + 1)
+        num_w2, num_h2 = _text_bbox(draw, num_str, FONT_SUBTITLE)
+        draw.text(
+            (badge_x + (badge_size - num_w2) // 2, badge_y + (badge_size - num_h2) // 2 - 1),
+            num_str, font=FONT_SUBTITLE, fill=SURFACE,
+        )
+
+        pw, ph = _text_bbox(draw, plat, FONT_CAPTION)
+        pill_pad_x = 10
+        pill_pad_y = 4
+        pill_w = pw + pill_pad_x * 2
+        pill_h = ph + pill_pad_y * 2
+        pill_x = item_left + item_w - ITEM_CARD_PAD - pill_w
+        pill_y = item_top + (item_h - pill_h) // 2 + 1
+        r2, g2, b2 = _hex_to_rgb(plat_color)
+        draw.rounded_rectangle(
+            [pill_x, pill_y, pill_x + pill_w, pill_y + pill_h],
+            radius=PILL_RADIUS // 2,
+            fill=(r2, g2, b2, 60),
+        )
+        draw.text(
+            (pill_x + pill_pad_x, pill_y + pill_pad_y),
+            plat, font=FONT_CAPTION, fill=plat_color,
+        )
+
+        name_x = badge_x + badge_size + 14
+        name_y = item_top + 12
+
+        lvl_label = ""
+        if prestige:
+            lvl_label = f"P{prestige} "
+        if level:
+            lvl_label += f"Lv.{level}"
+        lvl_w, _ = _text_bbox(draw, lvl_label, FONT_CAPTION) if lvl_label else (0, 0)
+
+        name_max_w = pill_x - name_x - 12 - lvl_w - 8
+        name_trunc = _truncate_text(draw, name, FONT_SUBTITLE, max(name_max_w, 40))
+        draw.text((name_x, name_y), name_trunc, font=FONT_SUBTITLE, fill=ON_SURFACE)
+
+        if lvl_label:
+            nw_drawn, _ = _text_bbox(draw, name_trunc, FONT_SUBTITLE)
+            lvl_x = name_x + nw_drawn + 8
+            draw.text((lvl_x, name_y + 2), lvl_label, font=FONT_CAPTION, fill=MUTED)
+
+        rank_y = name_y + FONT_SIZES["subtitle"] + 2
+        rank_line = ""
+        rank_name = _parse_rank_name(r.get("rank_img", ""))
+        rp_val = str(r.get("rp", ""))
+        if rank_name:
+            rank_line = rank_name
+        if rp_val:
+            rp_fmt = f"{int(rp_val):,} RP" if rp_val.isdigit() else rp_val
+            rank_line = (rank_line + "  ·  " + rp_fmt) if rank_line else rp_fmt
+        if rank_line:
+            rank_trunc = _truncate_text(draw, rank_line, FONT_CAPTION, pill_x - name_x - 12)
+            draw.text((name_x, rank_y), rank_trunc, font=FONT_CAPTION, fill=ON_SURFACE)
+
+        uid_label = f"UID: {uid}"
+        uid_y = rank_y + (FONT_SIZES["caption"] + 4 if rank_line else 0)
+        uid_max_w = item_w - ITEM_CARD_PAD * 2 - badge_size - 14 - pill_w - 12
+        uid_trunc = _truncate_text(draw, uid_label, FONT_CAPTION, uid_max_w)
+        draw.text((name_x, uid_y), uid_trunc, font=FONT_CAPTION, fill=MUTED)
+
+        cy += ITEM_CARD_H + CARD_GAP_SM
+
+    if hint:
+        cy += 4
+        _draw_centered_text(
+            draw, hint, card_x0, cy, card_w0, FONT_CAPTION, fill=MUTED
+        )
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def _draw_text_sync(title: str, message: str, is_error: bool = False) -> bytes:
+    lines = message.split("\n")
+    line_h = FONT_SIZES["body"] + 4
+    body_h = len(lines) * line_h
+
+    w = BIND_CARD_W
+    h = PADDING * 4 + FONT_SIZES["title"] + CARD_GAP + body_h + 20
 
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
@@ -1442,13 +1740,16 @@ def _draw_text_sync(title: str, message: str, is_error: bool = False) -> bytes:
     _draw_shadow(draw, card_x, card_y, card_w, card_h)
     _draw_card_bg(draw, card_x, card_y, card_w, card_h)
 
-    card_x + PADDING
+    cx = card_x + PADDING
     cy = card_y + PADDING + 10
 
     title_color = PRIMARY if is_error else ACCENT_GREEN
     _draw_centered_text(draw, title, card_x, cy, card_w, FONT_TITLE, fill=title_color)
     cy += FONT_SIZES["title"] + CARD_GAP
-    _draw_centered_text(draw, message, card_x, cy, card_w, FONT_BODY, fill=MUTED)
+
+    for line in lines:
+        draw.text((cx + 8, cy), line, font=FONT_BODY, fill=MUTED)
+        cy += line_h
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")

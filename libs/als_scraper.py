@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from urllib.parse import quote
+
 from .playwright_manager import run_with_page
 
 
@@ -79,7 +81,7 @@ async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
 
 async def search_players(name: str, platform: str = "PC") -> list[dict]:
     """访问ALS玩家页面，从DOM提取数据"""
-    encoded = name.replace("+", "%2B").replace(" ", "+")
+    encoded = quote(name, safe="")
     url = f"https://apexlegendsstatus.com/profile/{platform}/{encoded}"
     async with run_with_page() as page:
         try:
@@ -98,25 +100,24 @@ async def search_players(name: str, platform: str = "PC") -> list[dict]:
                 pass
             result = await page.evaluate("""() => {
                 const items = [];
-                // 1. 搜索页: 找所有玩家链接 (href含profile/uid)
                 document.querySelectorAll('a[href*="profile/uid"]').forEach(a => {
                     const m = (a.href || '').match(/profile\\/uid\\/(\\w+)\\/(\\d+)/);
-                    if (m) items.push({name: a.textContent.trim(), uid: m[2], platform: m[1]});
+                    if (!m) return;
+                    const pn = a.querySelector('.player-name');
+                    const name = pn ? pn.textContent.trim() : a.textContent.trim().split(/Lvl|Prestige|Currently/)[0].trim();
+                    const row = a.textContent;
+                    const lv = (row.match(/Lvl\\s*(\\d+)/) || [])[1] || '';
+                    const pr = (row.match(/Prestige\\s*(\\d+)/) || [])[1] || '';
+                    const rp = (row.match(/([\\d,]+)\\s*RP/) || [])[1] || '';
+                    const ri = a.querySelector('img[src*="ranks"]');
+                    const rank_img = ri ? ri.src : '';
+                    items.push({name, uid: m[2], platform: m[1], level: lv, prestige: pr, rp: rp.replace(/,/g,''), rank_img});
                 });
-                // 2. 搜索页: 找 .search-result 行
-                document.querySelectorAll('.search-result, .player-search-result, [class*="search"] a[href*="/profile/"]').forEach(a => {
-                    const m = (a.href || '').match(/profile\\/(?:uid\\/)?(\\w+)\\/(\\d+)/);
-                    if (m && !items.find(i => i.uid === m[2])) {
-                        items.push({name: a.textContent.trim(), uid: m[2], platform: m[1]});
-                    }
-                });
-                // 3. 如果是直接玩家页
                 if (!items.length) {
                     const name = (document.querySelector('.player-name') || {}).textContent?.trim();
                     const uid = (document.getElementById('puid') || {}).value;
                     if (name && uid) items.push({name, uid, platform: '""" + platform + """'});
                 }
-                // 去重
                 const seen = new Set();
                 return items.filter(i => { const k = i.uid; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 10);
             }""")

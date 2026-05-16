@@ -34,6 +34,8 @@ class XiaoChiyu(Star):
         self._temp_dir = Path(get_astrbot_data_path()) / "temp" / "apex_xiaochiyu"
         self._temp_dir.mkdir(parents=True, exist_ok=True)
 
+        self._last_search: dict[str, list[dict]] = {}
+
         self._fire_and_forget(self._on_init(), "DB初始化")
 
     def _fire_and_forget(self, coro, name: str = ""):
@@ -80,17 +82,31 @@ class XiaoChiyu(Star):
     # ═══════════════════════════════════════════════
 
     @filter.command("bind", alias={"绑定"})
-    async def cmd_bind(self, event: AstrMessageEvent, *args):
+    async def cmd_bind(self, event: AstrMessageEvent):
         """绑定 Apex 账号 — /bind <玩家名> [平台]"""
-        args = list(args)
+        msg = event.get_message_str().strip()
+        rest = msg.split(maxsplit=1)[1] if " " in msg else ""
+        parts = rest.split()
         platform = "PC"
-        if args and args[-1].upper() in ("PC", "PS4", "X1"):
-            platform = args.pop().upper()
-        name = " ".join(args)
+        if parts and parts[-1].upper() in ("PC", "PS4", "X1"):
+            platform = parts.pop().upper()
+        name = " ".join(parts)
         if not name:
             yield event.plain_result("请提供玩家名，例如 /bind Liliumcordis")
             return
         qq_id = event.get_sender_id()
+
+        if name.strip().isdigit():
+            idx = int(name.strip())
+            cached = self._last_search.get(qq_id, [])
+            if 1 <= idx <= len(cached):
+                r = cached[idx - 1]
+                plat = r.get("platform", platform)
+                await self.db.upsert_user(qq_id, r["uid"], r["name"], plat)
+                img = await renderer.draw_bind_card(r["uid"], r["name"], plat)
+                async for r2 in self._send_card(event, img):
+                    yield r2
+                return
 
         results = await search_players(name, platform)
         if results:
@@ -101,10 +117,9 @@ class XiaoChiyu(Star):
                 async for r2 in self._send_card(event, img):
                     yield r2
                 return
-            lines = [f"找到 {len(results)} 个玩家，请用 /bind_uid <UID> 绑定:"]
-            for r in results:
-                lines.append(f"  {r['name']} — UID: {r['uid']}")
-            img = await renderer.draw_text_card("请选择", "\n".join(lines))
+            self._last_search[qq_id] = results
+            hint = f"共 {len(results)} 个结果，请使用 /bind 数字 选择"
+            img = await renderer.draw_player_list_card(results, hint)
             async for r in self._send_card(event, img):
                 yield r
             return
@@ -182,15 +197,23 @@ class XiaoChiyu(Star):
     # ═══════════════════════════════════════════════
 
     @filter.command("stats", alias={"战绩", "查询", "profile", "卡片"})
-    async def cmd_stats(self, event: AstrMessageEvent, *args):
+    async def cmd_stats(self, event: AstrMessageEvent):
         """查询 Apex 战绩 — /stats [玩家名或UID]"""
         qq_id = event.get_sender_id()
-        name = " ".join(args) if args else ""
+        msg = event.get_message_str().strip()
+        name = msg.split(maxsplit=1)[1] if " " in msg else ""
 
         if name:
             if name.strip().isdigit():
-                uid = name.strip()
-                platform = "PC"
+                idx = int(name.strip())
+                cached = self._last_search.get(qq_id, [])
+                if 1 <= idx <= len(cached):
+                    r = cached[idx - 1]
+                    uid = r["uid"]
+                    platform = r.get("platform", "PC")
+                else:
+                    uid = name.strip()
+                    platform = "PC"
             else:
                 # 优先 ALS 搜索（比 API 准确）
                 search_results = await search_players(name.strip())
@@ -199,10 +222,9 @@ class XiaoChiyu(Star):
                         uid = search_results[0]["uid"]
                         platform = search_results[0].get("platform", "PC")
                     else:
-                        lines = [f"找到 {len(search_results)} 个玩家，请用 /stats <UID> 查询:"]
-                        for r in search_results:
-                            lines.append(f"  {r['name']} — UID: {r['uid']}")
-                        img = await renderer.draw_text_card("请选择", "\n".join(lines))
+                        self._last_search[qq_id] = search_results
+                        hint = f"共 {len(search_results)} 个结果，请使用 /stats 数字 选择"
+                        img = await renderer.draw_player_list_card(search_results, hint)
                         async for r in self._send_card(event, img):
                             yield r
                         return
@@ -505,24 +527,51 @@ class XiaoChiyu(Star):
         qq_id = event.get_sender_id()
         if player_name:
             if player_name.strip().isdigit():
-                uid, platform = player_name.strip(), "PC"
+                idx = int(player_name.strip())
+                cached = self._last_search.get(qq_id, [])
+                if 1 <= idx <= len(cached):
+                    r = cached[idx - 1]
+                    uid = r["uid"]
+                    platform = r.get("platform", "PC")
+                else:
+                    uid, platform = player_name.strip(), "PC"
             else:
-                results = await self.apex.name_to_uid_all(player_name.strip())
-                if not results:
-                    return CallToolResult(
-                        content=[
-                            TextContent(type="text", text=f"找不到玩家 '{player_name}'")
-                        ]
-                    )
-                if len(results) > 1:
-                    lines = [f"找到 {len(results)} 个匹配玩家:"]
-                    for r in results:
-                        lines.append(f"{r.name} — UID {r.uid}")
-                    lines.append("请让用户选择一个 UID，然后用 UID 直接查询。")
-                    return CallToolResult(
-                        content=[TextContent(type="text", text="\n".join(lines))]
-                    )
-                uid, platform = results[0].uid, "PC"
+                search_results = await search_players(player_name.strip())
+                if search_results:
+                    if len(search_results) == 1:
+                        uid = search_results[0]["uid"]
+                        platform = search_results[0].get("platform", "PC")
+                    else:
+                        self._last_search[qq_id] = search_results
+                        hint = f"共 {len(search_results)} 个结果，请使用 /stats 数字 选择"
+                        img_bytes = await renderer.draw_player_list_card(search_results, hint)
+                        img_b64 = base64.b64encode(img_bytes).decode()
+                        return CallToolResult(
+                            content=[
+                                TextContent(
+                                    type="text",
+                                    text=f"找到 {len(search_results)} 个匹配玩家。请发送卡片图片，用户回复数字后，直接将该数字作为 player_name 参数再次调用 apex_stats 即可。",
+                                ),
+                                ImageContent(type="image", data=img_b64, mimeType="image/png"),
+                            ]
+                        )
+                else:
+                    api_results = await self.apex.name_to_uid_all(player_name.strip())
+                    if not api_results:
+                        return CallToolResult(
+                            content=[
+                                TextContent(type="text", text=f"找不到玩家 '{player_name}'")
+                            ]
+                        )
+                    if len(api_results) > 1:
+                        lines = [f"找到 {len(api_results)} 个匹配玩家:"]
+                        for r in api_results:
+                            lines.append(f"{r.name} — UID {r.uid}")
+                        lines.append("请让用户选择一个 UID，然后用 UID 直接查询。")
+                        return CallToolResult(
+                            content=[TextContent(type="text", text="\n".join(lines))]
+                        )
+                    uid, platform = api_results[0].uid, "PC"
         else:
             user = await self.db.get_user(qq_id)
             if not user:
@@ -641,10 +690,11 @@ class XiaoChiyu(Star):
     ):
         """绑定 Apex 账号到当前 QQ。
         Args:
-            player_name(string): 要绑定的玩家名
+            player_name(string): 要绑定的玩家名或数字序号
             platform(string): 平台，PC/PS4/X1，默认PC
         """
-        from mcp.types import CallToolResult, TextContent
+        import base64
+        from mcp.types import CallToolResult, TextContent, ImageContent
 
         if platform.upper() not in ("PC", "PS4", "X1"):
             return CallToolResult(
@@ -656,8 +706,57 @@ class XiaoChiyu(Star):
             )
         platform = platform.upper()
         qq_id = event.get_sender_id()
-        results = await self.apex.name_to_uid_all(player_name, platform)
-        if not results:
+
+        if player_name.strip().isdigit():
+            idx = int(player_name.strip())
+            cached = self._last_search.get(qq_id, [])
+            if 1 <= idx <= len(cached):
+                r = cached[idx - 1]
+                plat = r.get("platform", platform)
+                await self.db.upsert_user(qq_id, r["uid"], r["name"], plat)
+                return CallToolResult(
+                    content=[
+                        TextContent(
+                            type="text",
+                            text=f"已成功绑定 {r['name']} (UID {r['uid']}, {plat})。请告知用户绑定成功。",
+                        )
+                    ]
+                )
+            return CallToolResult(
+                content=[
+                    TextContent(type="text", text=f"序号 {idx} 无效，请先搜索玩家名后再用数字选择。")
+                ]
+            )
+
+        results = await search_players(player_name.strip(), platform)
+        if results:
+            if len(results) == 1:
+                r = results[0]
+                plat = r.get("platform", platform)
+                await self.db.upsert_user(qq_id, r["uid"], r["name"], plat)
+                return CallToolResult(
+                    content=[
+                        TextContent(
+                            type="text",
+                            text=f"已成功绑定 {r['name']} (UID {r['uid']}, {plat})。请告知用户绑定成功。",
+                        )
+                    ]
+                )
+            self._last_search[qq_id] = results
+            img_bytes = await renderer.draw_player_list_card(results, f"共 {len(results)} 个结果，回复数字选择")
+            img_b64 = base64.b64encode(img_bytes).decode()
+            return CallToolResult(
+                content=[
+                    TextContent(
+                        type="text",
+                        text=f"找到 {len(results)} 个匹配玩家。请发送卡片图片，用户回复数字后重新调用 apex_bind 传入该数字即可。",
+                    ),
+                    ImageContent(type="image", data=img_b64, mimeType="image/png"),
+                ]
+            )
+
+        api_results = await self.apex.name_to_uid_all(player_name, platform)
+        if not api_results:
             return CallToolResult(
                 content=[
                     TextContent(
@@ -666,15 +765,15 @@ class XiaoChiyu(Star):
                     )
                 ]
             )
-        if len(results) > 1:
-            lines = [f"找到 {len(results)} 个匹配玩家:"]
-            for r in results:
+        if len(api_results) > 1:
+            lines = [f"找到 {len(api_results)} 个匹配玩家:"]
+            for r in api_results:
                 lines.append(f"{r.name} — UID {r.uid}")
             lines.append("请让用户选择一个 UID，用 /bind_uid <UID> 绑定。")
             return CallToolResult(
                 content=[TextContent(type="text", text="\n".join(lines))]
             )
-        result = results[0]
+        result = api_results[0]
         await self.db.upsert_user(qq_id, result.uid, result.name, platform)
         return CallToolResult(
             content=[
