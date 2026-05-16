@@ -35,12 +35,15 @@ async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
                 const seasons = [];
                 document.querySelectorAll('img[src*="you_re_tiering_me_apart"]').forEach(img => {
                     const m = img.src.match(/you_re_tiering_me_apart_(\\w+)_rs(\\d+)/);
-                    if (m) seasons.push({
+                    if (m) {
+                        let b64 = img.src;
+                        try { const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);b64=c.toDataURL('image/png') } catch(e){}
+                        seasons.push({
                         season: 'S' + m[2],
                         tier: m[1],
-                        badge_url: img.src,
+                        badge_url: b64,
                         color: colors[m[1]] || '#666'
-                    });
+                    });}
                 });
                 const special = [];
                 const seen = new Set();
