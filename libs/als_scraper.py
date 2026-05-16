@@ -24,9 +24,7 @@ async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
         )
 
         try:
-            await page.goto(url, wait_until="domcontentloaded", timeout=15000)
-            # 等待徽章图片渲染后提取（最多5秒）
-            await page.wait_for_selector('img[src*="you_re_tiering_me_apart"]', timeout=5000)
+            await page.goto(url, wait_until="networkidle", timeout=20000)
 
             result = await page.evaluate("""() => {
                 const colors = {
