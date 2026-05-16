@@ -14,7 +14,7 @@ from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 from .libs.apex_client import ApexClient
 from .libs.database import Database
 from .libs import image_renderer as renderer
-from .libs.als_scraper import fetch_badges
+from .libs.als_scraper import fetch_badges, search_players
 
 
 @register(
@@ -89,17 +89,35 @@ class XiaoChiyu(Star):
         platform = platform.upper()
         qq_id = event.get_sender_id()
 
-        results = await self.apex.name_to_uid_all(name, platform)
-        if not results:
+        results = await search_players(name, platform)
+        if results:
+            if len(results) == 1:
+                r = results[0]
+                await self.db.upsert_user(qq_id, r["uid"], r["name"], platform)
+                img = await renderer.draw_bind_card(r["uid"], r["name"], platform)
+                async for r2 in self._send_card(event, img):
+                    yield r2
+                return
+            lines = [f"找到 {len(results)} 个玩家，请用 /bind_uid <UID> 绑定:"]
+            for r in results:
+                lines.append(f"  {r['name']} — UID: {r['uid']}")
+            img = await renderer.draw_text_card("请选择", "\n".join(lines))
+            async for r in self._send_card(event, img):
+                yield r
+            return
+
+        # ALS搜不到，回退API
+        api_results = await self.apex.name_to_uid_all(name, platform)
+        if not api_results:
             img = await renderer.draw_text_card(
                 "绑定失败", f"找不到玩家 '{name}'", is_error=True
             )
             async for r in self._send_card(event, img):
                 yield r
             return
-        if len(results) > 1:
-            lines = [f"找到 {len(results)} 个匹配玩家，请用 /bind_uid <UID> 绑定:"]
-            for r in results:
+        if len(api_results) > 1:
+            lines = [f"找到 {len(api_results)} 个匹配玩家，请用 /bind_uid <UID> 绑定:"]
+            for r in api_results:
                 lines.append(f"  {r.name} — UID: {r.uid}")
             img = await renderer.draw_text_card(
                 "多个匹配", "\n".join(lines), is_error=False
@@ -107,23 +125,22 @@ class XiaoChiyu(Star):
             async for r in self._send_card(event, img):
                 yield r
             return
-        result = results[0]
+        api_result = api_results[0]
 
-        # 检查名字是否匹配
         expected = name.strip().lower().replace(" ", "")
-        actual = result.name.lower().replace(" ", "")
+        actual = api_result.name.lower().replace(" ", "")
         if expected not in actual and actual not in expected:
             img = await renderer.draw_text_card(
                 "名字可能不匹配",
-                f"搜索 '{name}' 返回了 '{result.name}' (UID: {result.uid})\n"
-                f"绑定将继续。如果不对，请用 /bind_uid {result.uid} 重新绑定",
+                f"搜索 '{name}' 返回了 '{api_result.name}' (UID: {api_result.uid})\n"
+                f"绑定将继续。如果不对，请用 /bind_uid {api_result.uid} 重新绑定",
                 is_error=False,
             )
             async for r in self._send_card(event, img):
                 yield r
 
-        await self.db.upsert_user(qq_id, result.uid, result.name, platform)
-        img = await renderer.draw_bind_card(result.uid, result.name, platform)
+        await self.db.upsert_user(qq_id, api_result.uid, api_result.name, platform)
+        img = await renderer.draw_bind_card(api_result.uid, api_result.name, platform)
         async for r in self._send_card(event, img):
             yield r
 
@@ -171,39 +188,32 @@ class XiaoChiyu(Star):
                 uid = name.strip()
                 platform = "PC"
             else:
-                results = await self.apex.name_to_uid_all(name.strip())
-                if not results:
-                    img = await renderer.draw_text_card(
-                        "查询失败", f"找不到玩家 '{name}'", is_error=True
-                    )
-                    async for r in self._send_card(event, img):
-                        yield r
-                    return
-                if len(results) > 1:
-                    lines = [f"找到 {len(results)} 个匹配玩家，请用 UID 查询或绑定:"]
-                    for r in results:
-                        lines.append(f"  {r.name} — UID: {r.uid}")
-                    img = await renderer.draw_text_card(
-                        "多个匹配", "\n".join(lines), is_error=False
-                    )
-                    async for r in self._send_card(event, img):
-                        yield r
-                    return
-                uid = results[0].uid
-                # 单结果时检查名字是否匹配
-                if len(results) == 1:
-                    expected = name.strip().lower().replace(" ", "")
-                    actual = results[0].name.lower().replace(" ", "")
-                    if expected not in actual and actual not in expected:
+                # 优先 ALS 搜索（比 API 准确）
+                search_results = await search_players(name.strip())
+                if search_results:
+                    if len(search_results) == 1:
+                        uid = search_results[0]["uid"]
+                        platform = search_results[0].get("platform", "PC")
+                    else:
+                        lines = [f"找到 {len(search_results)} 个玩家，请用 /stats <UID> 查询:"]
+                        for r in search_results:
+                            lines.append(f"  {r['name']} — UID: {r['uid']}")
+                        img = await renderer.draw_text_card("请选择", "\n".join(lines))
+                        async for r in self._send_card(event, img):
+                            yield r
+                        return
+                else:
+                    # ALS搜不到，回退API
+                    api_results = await self.apex.name_to_uid_all(name.strip())
+                    if not api_results:
                         img = await renderer.draw_text_card(
-                            "名字可能不匹配",
-                            f"搜索 '{name}' 返回了 '{results[0].name}' (UID: {uid})\n"
-                            f"如果不对，请用 /stats {uid} 或 /bind_uid {uid} 直接查",
-                            is_error=False,
+                            "查询失败", f"找不到玩家 '{name}'", is_error=True
                         )
                         async for r in self._send_card(event, img):
                             yield r
                         return
+                    uid = api_results[0].uid
+                    platform = "PC"
                 platform = "PC"
         else:
             user = await self.db.get_user(qq_id)
