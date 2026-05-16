@@ -13,18 +13,9 @@ async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
     url = f"https://apexlegendsstatus.com/profile/{platform}/{name_or_uid}"
 
     async with run_with_page() as page:
-        # 屏蔽不需要的资源：CSS、字体、非徽章图片
-        await page.route(
-            "**/*",
-            lambda route: (
-                route.abort()
-                if route.request.resource_type in ("stylesheet", "font", "media")
-                else route.continue_()
-            ),
-        )
-
         try:
-            await page.goto(url, wait_until="networkidle", timeout=20000)
+            await page.goto(url, wait_until="load", timeout=30000)
+            await page.wait_for_timeout(4000)
 
             result = await page.evaluate("""() => {
                 const colors = {
@@ -39,19 +30,6 @@ async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
                         season: 'S' + m[2],
                         tier: m[1],
                         badge_url: img.src,
-                        color: colors[m[1]] || '#666'
-                    });
-                });
-                    } catch(e) { b64map[key] = img.src; }
-                });
-                // 等待所有fetch完成
-                await new Promise(r => setTimeout(r, 2000));
-                document.querySelectorAll('img[src*="you_re_tiering_me_apart"]').forEach(img => {
-                    const m = img.src.match(/you_re_tiering_me_apart_(\\w+)_rs(\\d+)/);
-                    if (m) seasons.push({
-                        season: 'S' + m[2],
-                        tier: m[1],
-                        badge_url: b64map['S'+m[2]] || img.src,
                         color: colors[m[1]] || '#666'
                     });
                 });
