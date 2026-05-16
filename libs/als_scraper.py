@@ -7,8 +7,7 @@ from .playwright_manager import run_with_page
 
 async def _do_fetch(page, name_or_uid: str, platform: str) -> dict:
     url = f"https://apexlegendsstatus.com/profile/{platform}/{name_or_uid}"
-    await page.goto(url, wait_until="load", timeout=30000)
-    await page.wait_for_timeout(4000)
+    await page.goto(url, wait_until="networkidle", timeout=30000)
     return await page.evaluate("""() => {
         const colors = {
             bronze:'#cd7f32',silver:'#c0c0c0',gold:'#ffd700',
@@ -79,31 +78,24 @@ async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
 
 
 async def search_players(name: str, platform: str = "PC") -> list[dict]:
-    """在 ALS 网站搜索玩家名，返回匹配列表 [{name, uid, platform}]"""
+    """访问ALS玩家页面，从DOM提取数据"""
     from urllib.parse import quote
 
     url = f"https://apexlegendsstatus.com/profile/{platform}/{quote(name)}"
     async with run_with_page() as page:
         try:
-            await page.goto(url, wait_until="load", timeout=30000)
-            await page.wait_for_timeout(3000)
-            # ALS 不存在的玩家会显示搜索页/错误页
-            results = await page.evaluate("""() => {
-                const items = [];
-                // 尝试从搜索结果列表提取
-                document.querySelectorAll('.search-results a, .v2-player-result, [class*="player"] a').forEach(el => {
-                    const uid = (el.href || '').match(/uid\\/(\\w+)\\/(\\d+)/);
-                    if (uid) items.push({name: el.textContent.trim(), uid: uid[2], platform: uid[1]});
-                });
-                // 如果当前页就是玩家页（直接命中）
-                if (!items.length) {
-                    const name = (document.querySelector('.player-name') || {}).textContent?.trim();
-                    const puid = (document.getElementById('puid') || {}).value;
-                    if (name && puid) items.push({name, uid: puid, platform: 'PC'});
-                }
-                return items.slice(0, 10);
+            await page.goto(url, wait_until="networkidle", timeout=30000)
+            try:
+                await page.wait_for_selector(".player-name", timeout=10000)
+            except Exception:
+                pass
+            result = await page.evaluate("""() => {
+                const name = (document.querySelector('.player-name') || {}).textContent?.trim();
+                const uid = (document.getElementById('puid') || {}).value;
+                if (name && uid) return [{name, uid, platform: '""" + platform + """'}];
+                return [];
             }""")
-            return results
+            return result
         except Exception as e:
             from astrbot.api import logger
             logger.error(f"[SearchPlayers] Error: {e}")
