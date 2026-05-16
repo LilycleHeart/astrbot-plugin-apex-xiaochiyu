@@ -268,7 +268,7 @@ class XiaoChiyu(Star):
             img = await renderer.draw_text_card(
                 "查询失败", "无法获取大师 / 猎杀数据", is_error=True
             )
-            async for r in self._send_card(event, img, title="小赤羽·错误"):
+            async for r in self._send_card(event, img):
                 yield r
             return
         img = await renderer.draw_master_card(predator)
@@ -528,7 +528,6 @@ class XiaoChiyu(Star):
             "Master": "大师",
             "Predator": "猎杀",
         }
-        div_zh = {0: "4", 1: "3", 2: "2", 3: "1"}
         rn = rank_zh.get(
             profile_data["rank_name"].split(" ")[0], profile_data["rank_name"]
         )
