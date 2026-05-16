@@ -89,14 +89,25 @@ class XiaoChiyu(Star):
         platform = platform.upper()
         qq_id = event.get_sender_id()
 
-        result = await self.apex.name_to_uid(name, platform)
-        if not result:
+        results = await self.apex.name_to_uid_all(name, platform)
+        if not results:
             img = await renderer.draw_text_card(
                 "绑定失败", f"找不到玩家 '{name}'", is_error=True
             )
             async for r in self._send_card(event, img):
                 yield r
             return
+        if len(results) > 1:
+            lines = [f"找到 {len(results)} 个匹配玩家，请用 /bind_uid <UID> 绑定:"]
+            for r in results:
+                lines.append(f"  {r.name} — UID: {r.uid}")
+            img = await renderer.draw_text_card(
+                "多个匹配", "\n".join(lines), is_error=False
+            )
+            async for r in self._send_card(event, img):
+                yield r
+            return
+        result = results[0]
 
         await self.db.upsert_user(qq_id, result.uid, result.name, platform)
         img = await renderer.draw_bind_card(result.uid, result.name, platform)
@@ -147,15 +158,25 @@ class XiaoChiyu(Star):
                 uid = name.strip()
                 platform = "PC"
             else:
-                result = await self.apex.name_to_uid(name.strip())
-                if not result:
+                results = await self.apex.name_to_uid_all(name.strip())
+                if not results:
                     img = await renderer.draw_text_card(
                         "查询失败", f"找不到玩家 '{name}'", is_error=True
                     )
                     async for r in self._send_card(event, img):
                         yield r
                     return
-                uid = result.uid
+                if len(results) > 1:
+                    lines = [f"找到 {len(results)} 个匹配玩家，请用 UID 查询或绑定:"]
+                    for r in results:
+                        lines.append(f"  {r.name} — UID: {r.uid}")
+                    img = await renderer.draw_text_card(
+                        "多个匹配", "\n".join(lines), is_error=False
+                    )
+                    async for r in self._send_card(event, img):
+                        yield r
+                    return
+                uid = results[0].uid
                 platform = "PC"
         else:
             user = await self.db.get_user(qq_id)
@@ -445,14 +466,22 @@ class XiaoChiyu(Star):
             if player_name.strip().isdigit():
                 uid, platform = player_name.strip(), "PC"
             else:
-                result = await self.apex.name_to_uid(player_name.strip())
-                if not result:
+                results = await self.apex.name_to_uid_all(player_name.strip())
+                if not results:
                     return CallToolResult(
                         content=[
                             TextContent(type="text", text=f"找不到玩家 '{player_name}'")
                         ]
                     )
-                uid, platform = result.uid, "PC"
+                if len(results) > 1:
+                    lines = [f"找到 {len(results)} 个匹配玩家:"]
+                    for r in results:
+                        lines.append(f"{r.name} — UID {r.uid}")
+                    lines.append("请让用户选择一个 UID，然后用 UID 直接查询。")
+                    return CallToolResult(
+                        content=[TextContent(type="text", text="\n".join(lines))]
+                    )
+                uid, platform = results[0].uid, "PC"
         else:
             user = await self.db.get_user(qq_id)
             if not user:
@@ -586,8 +615,8 @@ class XiaoChiyu(Star):
             )
         platform = platform.upper()
         qq_id = event.get_sender_id()
-        result = await self.apex.name_to_uid(player_name, platform)
-        if not result:
+        results = await self.apex.name_to_uid_all(player_name, platform)
+        if not results:
             return CallToolResult(
                 content=[
                     TextContent(
@@ -596,6 +625,15 @@ class XiaoChiyu(Star):
                     )
                 ]
             )
+        if len(results) > 1:
+            lines = [f"找到 {len(results)} 个匹配玩家:"]
+            for r in results:
+                lines.append(f"{r.name} — UID {r.uid}")
+            lines.append("请让用户选择一个 UID，用 /bind_uid <UID> 绑定。")
+            return CallToolResult(
+                content=[TextContent(type="text", text="\n".join(lines))]
+            )
+        result = results[0]
         await self.db.upsert_user(qq_id, result.uid, result.name, platform)
         return CallToolResult(
             content=[

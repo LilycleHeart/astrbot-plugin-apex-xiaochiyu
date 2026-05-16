@@ -259,13 +259,20 @@ class ApexClient:
     async def name_to_uid(
         self, name: str, platform: str = "PC"
     ) -> Optional[NameToUIDResult]:
+        """返回单个最佳匹配, 用于向后兼容"""
+        results = await self.name_to_uid_all(name, platform)
+        return results[0] if results else None
+
+    async def name_to_uid_all(
+        self, name: str, platform: str = "PC"
+    ) -> list[NameToUIDResult]:
+        """返回所有匹配的玩家"""
         try:
             data = await self._get("/nametouid", {"player": name, "platform": platform})
-            if not data.get("uid"):
-                return None
-            return NameToUIDResult(data)
+            results = data if isinstance(data, list) else [data]
+            return [NameToUIDResult(r) for r in results if r.get("uid")]
         except Exception:
-            return None
+            return []
 
     async def get_stats(self, uid: str, platform: str = "PC") -> Optional[PlayerStats]:
         try:
