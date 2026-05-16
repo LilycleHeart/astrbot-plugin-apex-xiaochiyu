@@ -599,8 +599,11 @@ async def _fetch_and_cache_image(url: str) -> str:
 
 async def _embed_images(html: str, timeout: float = 2.0) -> str:
     """将远程图片URL替换为base64，可指定超时"""
-    urls = list(set(re.findall(r'src="(https?://[^"]+)"', html)))
-    uncached = [u for u in urls if u not in _image_cache]
+    # 匹配 <img src="https://..."> 和 url(https://...)
+    img_urls = re.findall(r'src="(https?://[^"]+)"', html)
+    css_urls = re.findall(r'url\((https?://[^)]+)\)', html)
+    all_urls = list(set(img_urls + css_urls))
+    uncached = [u for u in all_urls if u not in _image_cache]
 
     if uncached:
         tasks = [_fetch_and_cache_image(u) for u in uncached]
@@ -609,12 +612,14 @@ async def _embed_images(html: str, timeout: float = 2.0) -> str:
         except asyncio.TimeoutError:
             pass
 
-    def _replace(m):
+    def _replace_all(m):
         url = m.group(1)
         mapped = _image_cache.get(url)
-        return f'src="{mapped}"' if mapped else m.group(0)
+        return m.group(0).replace(url, mapped) if mapped else m.group(0)
 
-    return re.sub(r'src="(https?://[^"]+)"', _replace, html)
+    html = re.sub(r'src="(https?://[^"]+)"', _replace_all, html)
+    html = re.sub(r'url\((https?://[^)]+)\)', _replace_all, html)
+    return html
 
 
 async def _render_card_sync(html: str, width: int, img_timeout: float = 2.0) -> bytes:
