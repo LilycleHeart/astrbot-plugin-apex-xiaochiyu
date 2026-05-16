@@ -103,6 +103,23 @@ class XiaoChiyu(Star):
         async for r in self._send_card(event, img):
             yield r
 
+    @filter.command("bind_uid", alias={"绑定UID"})
+    async def cmd_bind_uid(self, event: AstrMessageEvent, uid: str, platform: str = "PC"):
+        """直接通过 UID 绑定 — /bind_uid <UID> [平台]"""
+        if platform.upper() not in ("PC", "PS4", "X1"):
+            yield event.plain_result("平台仅支持 PC / PS4 / X1")
+            return
+        platform = platform.upper()
+        qq_id = event.get_sender_id()
+        stats = await self.apex.get_stats(uid, platform)
+        if not stats:
+            yield event.plain_result(f"找不到 UID '{uid}'")
+            return
+        await self.db.upsert_user(qq_id, uid, stats.name, platform)
+        img = await renderer.draw_bind_card(uid, stats.name, platform)
+        async for r in self._send_card(event, img):
+            yield r
+
     @filter.command("unbind", alias={"解绑"})
     async def cmd_unbind(self, event: AstrMessageEvent):
         """解绑 Apex 账号"""
@@ -122,20 +139,24 @@ class XiaoChiyu(Star):
 
     @filter.command("stats", alias={"战绩", "查询", "profile", "卡片"})
     async def cmd_stats(self, event: AstrMessageEvent, name: str = ""):
-        """查询 Apex 战绩 — /stats [玩家名]"""
+        """查询 Apex 战绩 — /stats [玩家名或UID]"""
         qq_id = event.get_sender_id()
 
         if name:
-            result = await self.apex.name_to_uid(name.strip())
-            if not result:
-                img = await renderer.draw_text_card(
-                    "查询失败", f"找不到玩家 '{name}'", is_error=True
-                )
-                async for r in self._send_card(event, img):
-                    yield r
-                return
-            uid = result.uid
-            platform = "PC"
+            if name.strip().isdigit():
+                uid = name.strip()
+                platform = "PC"
+            else:
+                result = await self.apex.name_to_uid(name.strip())
+                if not result:
+                    img = await renderer.draw_text_card(
+                        "查询失败", f"找不到玩家 '{name}'", is_error=True
+                    )
+                    async for r in self._send_card(event, img):
+                        yield r
+                    return
+                uid = result.uid
+                platform = "PC"
         else:
             user = await self.db.get_user(qq_id)
             if not user:
