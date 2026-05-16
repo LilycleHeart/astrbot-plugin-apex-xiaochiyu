@@ -79,10 +79,8 @@ async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
 
 async def search_players(name: str, platform: str = "PC") -> list[dict]:
     """访问ALS玩家页面，从DOM提取数据"""
-    from urllib.parse import quote
-
-    url = f"https://apexlegendsstatus.com/profile/{platform}/{quote(name, safe='')}"
-    logger = None  # defined later in try block
+    encoded = name.replace("+", "%2B").replace(" ", "+")
+    url = f"https://apexlegendsstatus.com/profile/{platform}/{encoded}"
     async with run_with_page() as page:
         try:
             await page.goto(url, wait_until="networkidle", timeout=30000)
