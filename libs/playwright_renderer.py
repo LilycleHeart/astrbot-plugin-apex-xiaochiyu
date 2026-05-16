@@ -708,13 +708,32 @@ async def draw_server_status_card(server_status) -> bytes:
 
 _MAP_BASE = "https://apexlegendsstatus.com/assets/maps"
 
+# LTM/特殊地图名→ALS文件名映射
+_MAP_VARIANTS = {
+    "Skulltown": "Arena_Skulltown",
+    "Skull Town": "Arena_Skulltown",
+    "Autumn Estates": "Arena_Autumn_Estates",
+    "Monument": "Worlds_Edge",
+    "Siphon": "Kings_Canyon",
+    "Caustic Treatment": "No_Map_Data",
+    "Estates": "Arena_Autumn_Estates",
+    "Phase Runner": "Arena_Phase_Runner",
+    "Overflow": "Arena_Overflow",
+    "Habitat": "Arena_Habitat",
+    "Encore": "Arena_Encore",
+    "Party Crasher": "Arena_Party_Crasher",
+    "Drop-Off": "Arena_Drop_Off",
+}
+
 
 def _map_url(map_name: str) -> str:
     """根据地图名生成ALS地图图片URL"""
     if not map_name:
         return ""
-    # 去撇号 + 空格替换
-    slug = map_name.replace("'", "").replace(" ", "_")
+    # 优先查变体映射
+    slug = _MAP_VARIANTS.get(map_name)
+    if not slug:
+        slug = map_name.replace("'", "").replace(" ", "_")
     return f"{_MAP_BASE}/{slug}.png"
 
 
