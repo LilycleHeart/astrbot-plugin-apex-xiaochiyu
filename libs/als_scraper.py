@@ -85,6 +85,14 @@ async def search_players(name: str, platform: str = "PC") -> list[dict]:
     async with run_with_page() as page:
         try:
             await page.goto(url, wait_until="networkidle", timeout=30000)
+            from astrbot.api import logger
+            logger.info(f"[SearchPlayers] 实际URL: {page.url} (请求: {url})")
+            # 截图存 debug_screenshots/
+            import uuid, os
+            debug_dir = os.path.join(os.path.dirname(__file__), "..", "debug_screenshots")
+            os.makedirs(debug_dir, exist_ok=True)
+            safe_name = name.replace(" ", "_").replace("/", "_")[:30]
+            await page.screenshot(path=os.path.join(debug_dir, f"search_{safe_name}.png"), full_page=True)
             try:
                 await page.wait_for_selector(".player-name", timeout=10000)
             except Exception:
