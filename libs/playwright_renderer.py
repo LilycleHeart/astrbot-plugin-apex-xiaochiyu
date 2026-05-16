@@ -557,9 +557,59 @@ def _render_moe_number_base64(number: int) -> str:
 # ══════════════════════════════════════════
 #  公开接口
 # ══════════════════════════════════════════
+#  图片缓存 — 远程URL转base64，零网络渲染
+# ══════════════════════════════════════════
+
+import asyncio
+import re
+from functools import lru_cache
+
+_image_cache: dict[str, str] = {}
+
+
+@lru_cache(maxsize=128)
+def _download_sync(url: str) -> str | None:
+    """同步下载图片转base64 (lru_cache保证线程安全)"""
+    import httpx
+    try:
+        with httpx.Client(timeout=8.0, follow_redirects=True) as c:
+            r = c.get(url)
+            r.raise_for_status()
+            b64 = base64.b64encode(r.content).decode()
+            return f"data:image/png;base64,{b64}"
+    except Exception:
+        return None
+
+
+async def _embed_images(html: str) -> str:
+    """将远程图片URL替换为base64 data URI"""
+    urls = set()
+    urls.update(re.findall(r'src="(https?://[^"]+)"', html))
+    urls.update(re.findall(r'url\((https?://[^)]+)\)', html))
+
+    new_urls = [u for u in urls if u not in _image_cache]
+    if new_urls:
+
+        async def _fetch(url):
+            loop = asyncio.get_running_loop()
+            b64 = await loop.run_in_executor(None, _download_sync, url)
+            if b64:
+                _image_cache[url] = b64
+            return b64
+
+        await asyncio.gather(*[_fetch(u) for u in new_urls], return_exceptions=True)
+
+    def _replace(m):
+        url = m.group(1)
+        return m.group(0).replace(url, _image_cache.get(url, url))
+
+    html = re.sub(r'src="(https?://[^"]+)"', _replace, html)
+    html = re.sub(r'url\((https?://[^)]+)\)', _replace, html)
+    return html
 
 
 async def _render_card_sync(html: str, width: int) -> bytes:
+    html = await _embed_images(html)
     async with run_with_page(viewport={"width": width, "height": 100}, device_scale_factor=2) as page:
         await page.set_content(html, wait_until="domcontentloaded", timeout=15000)
         await page.wait_for_selector(".card", timeout=10000)
