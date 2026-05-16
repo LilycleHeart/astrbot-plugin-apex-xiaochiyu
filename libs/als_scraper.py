@@ -33,17 +33,32 @@ async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
                     master:'#9f35e6',predator:'#e31b39'
                 };
                 const seasons = [];
+                // 用fetch+blob转base64, 回避canvas跨域限制
+                const b64map = {};
+                document.querySelectorAll('img[src*="you_re_tiering_me_apart"]').forEach(async img => {
+                    const m = img.src.match(/you_re_tiering_me_apart_(\\w+)_rs(\\d+)/);
+                    if (!m) return;
+                    const key = 'S'+m[2];
+                    try {
+                        const r = await fetch(img.src);
+                        const blob = await r.blob();
+                        b64map[key] = await new Promise(res => {
+                            const reader = new FileReader();
+                            reader.onload = () => res(reader.result);
+                            reader.readAsDataURL(blob);
+                        });
+                    } catch(e) { b64map[key] = img.src; }
+                });
+                // 等待所有fetch完成
+                await new Promise(r => setTimeout(r, 2000));
                 document.querySelectorAll('img[src*="you_re_tiering_me_apart"]').forEach(img => {
                     const m = img.src.match(/you_re_tiering_me_apart_(\\w+)_rs(\\d+)/);
-                    if (m) {
-                        let b64 = img.src;
-                        try { const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);b64=c.toDataURL('image/png') } catch(e){}
-                        seasons.push({
+                    if (m) seasons.push({
                         season: 'S' + m[2],
                         tier: m[1],
-                        badge_url: b64,
+                        badge_url: b64map['S'+m[2]] || img.src,
                         color: colors[m[1]] || '#666'
-                    });}
+                    });
                 });
                 const special = [];
                 const seen = new Set();
