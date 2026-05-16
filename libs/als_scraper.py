@@ -13,9 +13,20 @@ async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
     url = f"https://apexlegendsstatus.com/profile/{platform}/{name_or_uid}"
 
     async with run_with_page() as page:
+        # 屏蔽不需要的资源：CSS、字体、非徽章图片
+        await page.route(
+            "**/*",
+            lambda route: (
+                route.abort()
+                if route.request.resource_type in ("stylesheet", "font", "media")
+                else route.continue_()
+            ),
+        )
+
         try:
-            await page.goto(url, wait_until="load", timeout=30000)
-            await page.wait_for_timeout(4000)
+            await page.goto(url, wait_until="domcontentloaded", timeout=15000)
+            # 等待徽章图片渲染后提取（最多5秒）
+            await page.wait_for_selector('img[src*="you_re_tiering_me_apart"]', timeout=5000)
 
             result = await page.evaluate("""() => {
                 const colors = {
@@ -68,5 +79,6 @@ async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
             return result
 
         except Exception as e:
-            print(f"[BadgeFetcher] Error: {e}")
+            from astrbot.api import logger
+            logger.error(f"[BadgeFetcher] Error: {e}")
             return {"seasons": [], "special": []}
