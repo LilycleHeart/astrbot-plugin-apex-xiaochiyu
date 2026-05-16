@@ -12,18 +12,18 @@ from PIL import Image
 from .config import RANK_COLORS
 from .playwright_manager import run_with_page
 
-# ── 卡片专用配色（与原版 ancallbelle_card.html 一致）──
-_C_SURFACE = "#1a1c23"
-_C_CARD = "#22242d"
-_C_CARD2 = "#2a2d38"
-_C_CARD3 = "#313542"
-_C_TEXT = "#e0e1e6"
-_C_MUTED = "#9ca0ae"
-_C_OUTLINE = "#3e414d"
-_C_GOLD = "#ffd700"
-_C_DIAMOND = "#358de6"
-_C_MASTER = "#9f35e6"
-_C_PRED = "#e31b39"
+# ── MD3 深色主题配色 (种子色: Apex红 #DA292A) ──
+_C_SURFACE = "#141010"
+_C_CARD = "#1E1616"
+_C_CARD2 = "#251B1C"
+_C_CARD3 = "#312526"
+_C_TEXT = "#EDE0DF"
+_C_MUTED = "#D4C2C1"
+_C_OUTLINE = "#554747"
+_C_GOLD = "#E7C150"
+_C_DIAMOND = "#5D9FF0"
+_C_MASTER = "#C58BFF"
+_C_PRED = "#DA292A"
 
 
 # ── 汉化映射 ──
