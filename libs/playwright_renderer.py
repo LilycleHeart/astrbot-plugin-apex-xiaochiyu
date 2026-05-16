@@ -719,103 +719,89 @@ _MAP_ZH = {
 
 
 def _build_map_rotation_html(rotation) -> str:
-    def _column(mode_label: str, cur_map, cur_timer, next_map) -> str:
-        cur = cur_map if cur_map else ""
-        nxt = next_map if next_map else ""
-        cur_zh = _MAP_ZH.get(cur, cur)
-        nxt_zh = _MAP_ZH.get(nxt, nxt)
-        cur_bg = _MAP_BG.get(cur, "")
-        nxt_bg = _MAP_BG.get(nxt, "")
-        timer_str = (
-            f'<span class="timer">{cur_timer}</span>'
-            if cur_timer
-            else ""
-        )
+    def _section(mode_id: str, label: str, badge_color: str, current, next_) -> str:
+        cur_map = current.map if current else ""
+        nxt_map = next_.map if next_ else ""
+        cur_zh = _MAP_ZH.get(cur_map, cur_map)
+        nxt_zh = _MAP_ZH.get(nxt_map, nxt_map)
+        cur_bg = _MAP_BG.get(cur_map, "")
+        nxt_bg = _MAP_BG.get(nxt_map, "")
+        timer = current.remaining_timer if current else ""
 
-        cur_style = (
-            f"background:url({cur_bg}) center/cover no-repeat;"
-            if cur_bg
-            else f"background:{_C_CARD2};"
-        )
-        nxt_style = (
-            f"background:url({nxt_bg}) center/cover no-repeat;"
-            if nxt_bg
-            else f"background:{_C_CARD2};"
-        )
+        cur_bg_css = f"background-image:url({cur_bg})" if cur_bg else ""
+        nxt_bg_css = f"background-image:url({nxt_bg})" if nxt_bg else ""
 
         return f"""
-        <div class="map-col">
-            <div class="map-col-header"><span>{mode_label}</span></div>
-            <div class="map-pair">
-                <div class="map-side map-cur" style="{cur_style}">
-                    <div class="map-overlay"></div>
-                    <div class="map-label-bl">当前<span class="map-name-bl">{cur_zh}</span>{timer_str}</div>
+        <div class="mode-card">
+            <div class="split-bg-container">
+                <div class="bg-img bg-left" style="{cur_bg_css}"></div>
+                <div class="bg-img bg-right" style="{nxt_bg_css}"></div>
+            </div>
+            <div class="content-layer">
+                <div class="top-row">
+                    <span class="badge" style="background:{badge_color}">{label}</span>
+                    <span class="timer-chip">{timer}</span>
                 </div>
-                <div class="map-arrow">
-                    <div class="arrow-line"></div>
-                    <div class="arrow-head">▶</div>
-                </div>
-                <div class="map-side map-next" style="{nxt_style}">
-                    <div class="map-overlay"></div>
-                    <div class="map-label-br"><span>下一张</span><span class="map-name-br">{nxt_zh}</span></div>
+                <div class="bottom-row">
+                    <div class="cur-info">
+                        <span class="meta-label">当前地图</span>
+                        <span class="cur-name">{cur_zh}</span>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="next-info">
+                        <span class="meta-label">下一张</span>
+                        <span class="next-name">{nxt_zh}</span>
+                    </div>
                 </div>
             </div>
         </div>"""
 
-    br_html = _column(
-        "🎮 匹配",
-        rotation.br_current.map if rotation.br_current else "",
-        rotation.br_current.remaining_timer if rotation.br_current else "",
-        rotation.br_next.map if rotation.br_next else "",
-    )
-    ranked_html = _column(
-        "🏆 排位",
-        rotation.ranked_current.map if rotation.ranked_current else "",
-        rotation.ranked_current.remaining_timer if rotation.ranked_current else "",
-        rotation.ranked_next.map if rotation.ranked_next else "",
-    )
+    br = _section("pubs", "匹配", "#DA292A", rotation.br_current, rotation.br_next)
+    ranked = _section("ranked", "排位", "#E7C150", rotation.ranked_current, rotation.ranked_next)
 
-    ltm_html = ""
+    ltm = ""
     if rotation.ltm_current and rotation.ltm_current.event_name:
-        ltm_html = f"""
-        <div class="map-col">
-            <div class="map-col-header"><span>⚡ {rotation.ltm_current.event_name}</span></div>
-            <div class="map-pair" style="justify-content:center;">
-                <span class="map-name-bl" style="position:static;text-align:center;font-size:16px;color:{_C_DIAMOND}">{rotation.ltm_current.map}</span>
-            </div>
-        </div>"""
+        ltm = _section(
+            "ltm",
+            rotation.ltm_current.event_name,
+            "#5D9FF0",
+            rotation.ltm_current,
+            rotation.ltm_next,
+        )
 
     return f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>
 *{{margin:0;padding:0;box-sizing:border-box}}
-body{{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;background:{_C_SURFACE};color:{_C_TEXT};display:flex;justify-content:center;padding:24px}}
-.card{{width:680px;background:{_C_CARD};border-radius:24px;overflow:hidden;box-shadow:0 10px 20px rgba(0,0,0,.4)}}
-.title{{padding:18px 24px;font-size:20px;font-weight:800;text-align:left;border-bottom:1px solid {_C_OUTLINE}}}
-.map-grid{{display:flex;flex-direction:column;gap:0}}
-.map-col{{border-bottom:1px solid {_C_OUTLINE}}}
-.map-col:last-child{{border-bottom:none}}
-.map-col-header{{padding:12px 24px 0;font-size:14px;font-weight:700;color:{_C_GOLD}}}
-.map-pair{{display:flex;align-items:stretch;height:160px;position:relative}}
-.map-side{{flex:1;position:relative;overflow:hidden}}
-.map-overlay{{position:absolute;inset:0;background:linear-gradient(0deg,rgba(15,18,24,0.6) 0%,rgba(15,18,24,0.25) 50%,rgba(15,18,24,0.4) 100%)}}
-.map-arrow{{width:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:2;background:linear-gradient(90deg,rgba(15,18,24,0.6),rgba(15,18,24,0.3),rgba(15,18,24,0.6))}}
-.arrow-line{{position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(255,255,255,0.3);transform:translateX(-50%)}}
-.arrow-head{{color:{_C_DIAMOND};font-size:18px;text-shadow:0 0 10px {_C_DIAMOND};position:relative;z-index:1}}
-.map-label-bl,.map-label-br{{position:absolute;bottom:10px;padding:4px 10px;color:{_C_TEXT};font-size:12px;text-shadow:0 1px 4px rgba(0,0,0,.8);display:flex;flex-direction:column;gap:2px;z-index:1}}
-.map-label-bl{{left:10px;text-align:left}}
-.map-label-br{{right:10px;text-align:right}}
-.map-name-bl,.map-name-br{{font-size:15px;font-weight:700}}
-.timer{{font-size:11px;color:{_C_DIAMOND}}}
-.footer{{padding:10px 24px;font-size:11px;color:{_C_MUTED};text-align:center}}
+body{{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;background:{_C_SURFACE};display:flex;justify-content:center;padding:24px}}
+.card{{width:680px;background:{_C_CARD};border-radius:24px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.4)}}
+.title{{padding:18px 28px;font-size:20px;font-weight:800;color:{_C_TEXT};letter-spacing:0.5px;border-bottom:1px solid {_C_OUTLINE}}}
+
+.mode-card{{position:relative;height:200px;overflow:hidden}}
+.mode-card:not(:last-child){{border-bottom:1px solid rgba(255,255,255,0.06)}}
+
+.split-bg-container{{position:absolute;inset:0;background:#121212;z-index:1}}
+.bg-img{{position:absolute;top:0;width:70%;height:100%;background-size:cover;background-position:center}}
+.bg-left{{left:0;-webkit-mask-image:linear-gradient(to right,black 50%,transparent 100%);mask-image:linear-gradient(to right,black 50%,transparent 100%)}}
+.bg-right{{right:0;-webkit-mask-image:linear-gradient(to left,black 50%,transparent 100%);mask-image:linear-gradient(to left,black 50%,transparent 100%)}}
+
+.content-layer{{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;justify-content:space-between;padding:20px 28px;background:linear-gradient(180deg,rgba(0,0,0,0.35) 0%,rgba(0,0,0,0) 35%,rgba(0,0,0,0.75) 100%)}}
+.top-row{{display:flex;justify-content:space-between;align-items:flex-start}}
+.badge{{font-size:11px;font-weight:800;padding:5px 14px;border-radius:8px;text-transform:uppercase;letter-spacing:1px;color:#fff}}
+.timer-chip{{font-family:monospace;font-size:16px;font-weight:700;background:rgba(255,255,255,0.18);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.15);padding:6px 14px;border-radius:12px;color:{_C_TEXT}}}
+.bottom-row{{display:flex;align-items:flex-end;gap:24px}}
+.cur-info,.next-info{{display:flex;flex-direction:column;gap:2px}}
+.meta-label{{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.5)}}
+.cur-name{{font-size:28px;font-weight:900;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.6);line-height:1.1}}
+.next-name{{font-size:16px;font-weight:700;color:rgba(255,255,255,0.75)}}
+.divider{{flex:1;height:1px;background:rgba(255,255,255,0.15);align-self:flex-end;margin-bottom:8px}}
+.footer{{padding:10px 28px;font-size:11px;color:{_C_MUTED};text-align:center}}
 </style></head><body>
 <div class="card">
 <div class="title">地图轮换</div>
-<div class="map-grid">
-{br_html}
-{ranked_html}
-{ltm_html}
-</div>
-<div class="footer">Data: apexlegendsstatus.com · 背景图: EA</div>
+{br}
+{ranked}
+{ltm}
+<div class="footer">Data: apexlegendsstatus.com · 背景: EA</div>
 </div>
 </body></html>"""
 
