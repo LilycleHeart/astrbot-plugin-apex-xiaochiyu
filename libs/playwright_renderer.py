@@ -550,6 +550,15 @@ async def _embed_images(html: str) -> str:
 async def _render_card_sync(html: str, width: int) -> bytes:
     html = await _embed_images(html)
     async with run_with_page(viewport={"width": width, "height": 100}, device_scale_factor=2) as page:
+        # 图片已base64嵌入，屏蔽所有外部图片/CSS/字体请求
+        await page.route(
+            "**/*",
+            lambda route: (
+                route.abort()
+                if route.request.resource_type in ("image", "stylesheet", "font", "media")
+                else route.continue_()
+            ),
+        )
         await page.set_content(html, wait_until="domcontentloaded", timeout=15000)
         await page.wait_for_selector(".card", timeout=10000)
         card_height = await page.evaluate(
