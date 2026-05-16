@@ -81,7 +81,8 @@ async def search_players(name: str, platform: str = "PC") -> list[dict]:
     """访问ALS玩家页面，从DOM提取数据"""
     from urllib.parse import quote
 
-    url = f"https://apexlegendsstatus.com/profile/{platform}/{quote(name)}"
+    url = f"https://apexlegendsstatus.com/profile/{platform}/{quote(name, safe='')}"
+    logger = None  # defined later in try block
     async with run_with_page() as page:
         try:
             await page.goto(url, wait_until="networkidle", timeout=30000)
