@@ -302,7 +302,7 @@ def _build_stats_html(**d) -> str:
                 f"border-radius:20px;font-size:12px;font-weight:600;{fw}"
                 f"background:rgba({_hex_to_rgba(color, 0.15)});color:{color};"
                 f'border:1px solid rgba({_hex_to_rgba(color, 0.3)});">'
-                f'<img src="{url}" style="width:28px;height:28px;vertical-align:middle;">{s}</span>'
+                f'<img src="{url}" style="width:28px;height:28px;vertical-align:middle;" onerror="this.remove()">{s}</span>'
             )
         badge_rows += (
             f'<div style="display:flex;flex-wrap:wrap;gap:8px;padding:0 24px 12px;'
@@ -341,7 +341,7 @@ def _build_stats_html(**d) -> str:
             kc = "#9553d3" if i == 0 else _C_TEXT
             bd = "border:2px solid #9553d3;" if i == 0 else "border:2px solid #3e414d;"
             it = (
-                f'<img src="{icon_url}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;{bd}">'
+                f'<img src="{icon_url}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;{bd}" onerror="this.remove()">'
                 if icon_url
                 else '<div style="width:36px;height:36px;border-radius:50%;background:#313542;"></div>'
             )
@@ -369,7 +369,7 @@ def _build_stats_html(**d) -> str:
                 f"</span>"
             )
         ic = (
-            f'<img src="{si}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #3e414d;">'
+            f'<img src="{si}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #3e414d;" onerror="this.remove()">'
             if si
             else ""
         )
