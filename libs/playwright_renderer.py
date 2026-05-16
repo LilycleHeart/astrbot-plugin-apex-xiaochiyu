@@ -152,6 +152,8 @@ _TIER_COLORS_MAP = {
 
 def _hex_to_rgba(hex_color: str, alpha: float) -> str:
     h = hex_color.lstrip("#")
+    if not h or len(h) < 6:
+        return f"102,102,102,{alpha}"
     r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
     return f"{r},{g},{b},{alpha}"
 
@@ -293,7 +295,7 @@ def _build_stats_html(**d) -> str:
             url = b.get("badge_url", "")
             s = b.get("season", "")
             tier = b.get("tier", "")
-            color = b.get("color", "#666")
+            color = b.get("color") or "#666"
             fw = "font-weight:700;" if tier == "master" else ""
             chips.append(
                 f'<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;'
@@ -312,7 +314,7 @@ def _build_stats_html(**d) -> str:
         chips = []
         for b in special_badges:
             nm = b.get("name", "")
-            color = b.get("color", "#666")
+            color = b.get("color") or "#666"
             chips.append(
                 f'<span style="display:inline-flex;align-items:center;gap:4px;padding:6px 14px;'
                 f"border-radius:20px;font-size:12px;font-weight:600;"
