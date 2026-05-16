@@ -779,6 +779,11 @@ def _build_map_rotation_html(rotation) -> str:
         <div class="mode-card">
             <div class="split-bg-container">
                 <div class="bg-img bg-left" style="{cur_bg_css}"></div>
+                <div class="hud-arrow">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" d="M6,18L14.5,12L6,6M13,18L21.5,12L13,6"/>
+                    </svg>
+                </div>
                 <div class="bg-img bg-right" style="{nxt_bg_css}"></div>
             </div>
             <div class="content-layer">
@@ -827,6 +832,8 @@ body{{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;background:{_C_SUR
 .bg-img{{position:absolute;top:0;width:70%;height:100%;background-size:cover;background-position:center}}
 .bg-left{{left:0;-webkit-mask-image:linear-gradient(to right,black 50%,transparent 100%);mask-image:linear-gradient(to right,black 50%,transparent 100%)}}
 .bg-right{{right:0;-webkit-mask-image:linear-gradient(to left,black 50%,transparent 100%);mask-image:linear-gradient(to left,black 50%,transparent 100%)}}
+.hud-arrow{{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:36px;height:36px;z-index:5;filter:drop-shadow(0 0 6px rgba(255,255,255,0.4))}}
+.hud-arrow svg{{width:100%;height:100%}}
 
 .content-layer{{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;justify-content:space-between;padding:20px 28px;background:linear-gradient(180deg,rgba(0,0,0,0.35) 0%,rgba(0,0,0,0) 35%,rgba(0,0,0,0.75) 100%)}}
 .top-row{{display:flex;justify-content:space-between;align-items:flex-start}}
