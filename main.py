@@ -83,9 +83,9 @@ class XiaoChiyu(Star):
     async def cmd_bind(self, event: AstrMessageEvent, name: str, platform: str = "PC"):
         """绑定 Apex 账号 — /bind <玩家名> [平台]"""
         if platform.upper() not in ("PC", "PS4", "X1"):
-            yield event.plain_result("平台仅支持 PC / PS4 / X1")
-            return
-
+            # 可能是玩家名含空格，把 platform 拼回 name
+            name = f"{name} {platform}"
+            platform = "PC"
         platform = platform.upper()
         qq_id = event.get_sender_id()
 
