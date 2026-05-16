@@ -207,6 +207,11 @@ class XiaoChiyu(Star):
             "rank_dist_entries": rank_dist.entries if rank_dist else None,
         }
 
+        logger.info(
+            f"[DEBUG] rank_name={profile_data.get('rank_name')} "
+            f"rank_div={profile_data.get('rank_div')} "
+            f"rank_img={profile_data.get('rank_img')[:60] if profile_data.get('rank_img') else 'EMPTY'}"
+        )
         img = await renderer.draw_profile_card(profile_data)
         async for r in self._send_card(event, img):
             yield r

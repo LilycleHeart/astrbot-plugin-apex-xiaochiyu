@@ -471,7 +471,7 @@ body{{
 </div>
 
 <div class="rank-section">
-  <img class="rank-img" src="{rank_img}">
+  <img class="rank-img" src="{rank_img}" onerror="this.remove()">
   <div>
     <div class="rank-tier">{_rank_zh(rank_name)}{_rank_div_zh(rank_div)}</div>
     <div class="rank-rp">{rank_score:,} RP{rp_delta_html}</div>
