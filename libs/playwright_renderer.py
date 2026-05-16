@@ -585,9 +585,11 @@ async def _fetch_and_cache_image(url: str) -> str:
     from .http_client import get_async_client
     try:
         client = await get_async_client()
-        resp = await client.get(url, timeout=5.0)
+        resp = await client.get(url, timeout=8.0)
         resp.raise_for_status()
-        data = _resize_for_card(resp.content)
+        # 地图背景图不缩放，头像/徽章缩到160px
+        is_map = "/assets/maps/" in url
+        data = resp.content if is_map else _resize_for_card(resp.content)
         b64 = base64.b64encode(data).decode()
         _image_cache[url] = f"data:image/png;base64,{b64}"
         return _image_cache[url]
@@ -595,15 +597,15 @@ async def _fetch_and_cache_image(url: str) -> str:
         return url
 
 
-async def _embed_images(html: str) -> str:
-    """将远程图片URL替换为base64，最多等2秒"""
+async def _embed_images(html: str, timeout: float = 2.0) -> str:
+    """将远程图片URL替换为base64，可指定超时"""
     urls = list(set(re.findall(r'src="(https?://[^"]+)"', html)))
     uncached = [u for u in urls if u not in _image_cache]
 
     if uncached:
         tasks = [_fetch_and_cache_image(u) for u in uncached]
         try:
-            await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=2.0)
+            await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=timeout)
         except asyncio.TimeoutError:
             pass
 
@@ -615,8 +617,8 @@ async def _embed_images(html: str) -> str:
     return re.sub(r'src="(https?://[^"]+)"', _replace, html)
 
 
-async def _render_card_sync(html: str, width: int) -> bytes:
-    html = await _embed_images(html)
+async def _render_card_sync(html: str, width: int, img_timeout: float = 2.0) -> bytes:
+    html = await _embed_images(html, timeout=img_timeout)
     async with run_with_page(viewport={"width": width, "height": 100}, device_scale_factor=2) as page:
         # 屏蔽无用外部资源（图片已base64嵌入，少数未缓存的不拦截）
         await page.route(
@@ -811,7 +813,7 @@ body{{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;background:{_C_SUR
 
 async def draw_map_rotation_card(rotation) -> bytes:
     html = _build_map_rotation_html(rotation)
-    return await _render_card_sync(html, 720)
+    return await _render_card_sync(html, 720, img_timeout=8.0)
 
 
 # ══════════════════════════════════════════
