@@ -80,13 +80,16 @@ class XiaoChiyu(Star):
     # ═══════════════════════════════════════════════
 
     @filter.command("bind", alias={"绑定"})
-    async def cmd_bind(self, event: AstrMessageEvent, name: str, platform: str = "PC"):
+    async def cmd_bind(self, event: AstrMessageEvent, *args):
         """绑定 Apex 账号 — /bind <玩家名> [平台]"""
-        if platform.upper() not in ("PC", "PS4", "X1"):
-            # 可能是玩家名含空格，把 platform 拼回 name
-            name = f"{name} {platform}"
-            platform = "PC"
-        platform = platform.upper()
+        args = list(args)
+        platform = "PC"
+        if args and args[-1].upper() in ("PC", "PS4", "X1"):
+            platform = args.pop().upper()
+        name = " ".join(args)
+        if not name:
+            yield event.plain_result("请提供玩家名，例如 /bind Liliumcordis")
+            return
         qq_id = event.get_sender_id()
 
         results = await search_players(name, platform)
@@ -179,19 +182,10 @@ class XiaoChiyu(Star):
     # ═══════════════════════════════════════════════
 
     @filter.command("stats", alias={"战绩", "查询", "profile", "卡片"})
-    async def cmd_stats(self, event: AstrMessageEvent, name: str = ""):
+    async def cmd_stats(self, event: AstrMessageEvent, *args):
         """查询 Apex 战绩 — /stats [玩家名或UID]"""
         qq_id = event.get_sender_id()
-
-        # AstrBot 会把空格拆开，从消息原文获取完整名字
-        if name and not name.strip().isdigit():
-            msg = event.message_str.strip()
-            for prefix in ("/stats ", "/查询 ", "/战绩 ", "/profile ", "/卡片 "):
-                if msg.startswith(prefix):
-                    full = msg[len(prefix):].strip()
-                    if full and full != name:
-                        name = full
-                    break
+        name = " ".join(args) if args else ""
 
         if name:
             if name.strip().isdigit():
