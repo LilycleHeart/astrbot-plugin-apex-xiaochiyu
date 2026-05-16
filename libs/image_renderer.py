@@ -263,49 +263,12 @@ async def _download_moe_digits_async():
 
 
 def _load_moe_digits():
-    """同步加载 Moe 数字（先磁盘缓存，失败则跳过）"""
+    """优先磁盘缓存，无缓存直接跳过（不阻塞下载）"""
     global _moe_loaded
     if _moe_loaded:
         return
-    if _load_moe_digits_from_disk():
-        return
-    # 磁盘缓存不可用，同步下载兜底
-    from .http_client import get_sync_client
-
-    client = get_sync_client()
-    for d in "0123456789":
-        try:
-            r = client.get(f"{_MOE_DIGIT_BASE}/{d}.gif")
-            r.raise_for_status()
-            data = r.content
-            cache_dir = _get_moe_cache_dir()
-            try:
-                (cache_dir / f"{d}.png").write_bytes(data)
-            except Exception:
-                pass
-            img = Image.open(io.BytesIO(data))
-            frames = []
-            for frame in ImageSequence.Iterator(img):
-                f = frame.copy()
-                if f.mode != "RGBA":
-                    f = f.convert("RGBA")
-                frames.append(f)
-            _moe_digit_frames[d] = frames
-        except Exception as e:
-            logger = None
-            try:
-                from astrbot.api import logger as _log
-
-                logger = _log
-            except Exception:
-                pass
-            if logger:
-                logger.warning(
-                    f"[image_renderer] Failed to load Moe digit {d}.gif: {e}"
-                )
-    if _moe_digit_frames:
-        _normalize_moe_frames()
-    _moe_loaded = True
+    if not _load_moe_digits_from_disk():
+        _moe_loaded = True  # 标记已尝试，不重复检查磁盘
 
 
 def _paste_moe_number_frame(

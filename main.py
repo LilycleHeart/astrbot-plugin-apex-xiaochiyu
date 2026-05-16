@@ -34,13 +34,25 @@ class XiaoChiyu(Star):
         self._temp_dir = Path(get_astrbot_data_path()) / "temp" / "apex_xiaochiyu"
         self._temp_dir.mkdir(parents=True, exist_ok=True)
 
-        asyncio.create_task(self._on_init())
+        self._fire_and_forget(self._on_init(), "DB初始化")
+
+    def _fire_and_forget(self, coro, name: str = ""):
+        """后台任务，自动捕获异常并日志"""
+
+        async def _wrapper():
+            try:
+                await coro
+            except Exception as e:
+                tag = f" ({name})" if name else ""
+                logger.error(f"[小赤羽] 后台任务{tag}异常: {e}")
+
+        asyncio.create_task(_wrapper())
 
     async def _on_init(self):
         await self.db.init()
         from .libs.image_renderer import _download_moe_digits_async
 
-        asyncio.create_task(_download_moe_digits_async())
+        self._fire_and_forget(_download_moe_digits_async(), "Moe数字预加载")
 
     async def terminate(self):
         await self.apex.close()
@@ -51,16 +63,16 @@ class XiaoChiyu(Star):
         await close_browser()
         await close_clients()
 
-    def _save_temp(self, img_bytes: bytes, suffix: str = ".png") -> str:
+    async def _save_temp(self, img_bytes: bytes, suffix: str = ".png") -> str:
         path = self._temp_dir / f"{uuid.uuid4()}{suffix}"
-        path.write_bytes(img_bytes)
+        await asyncio.to_thread(path.write_bytes, img_bytes)
         return str(path)
 
     async def _send_card(
         self, event: AstrMessageEvent, img_bytes: bytes, suffix: str = ".png", **kwargs
     ):
         """直接发送图片消息"""
-        path = self._save_temp(img_bytes, suffix)
+        path = await self._save_temp(img_bytes, suffix)
         yield event.image_result(path)
 
     # ═══════════════════════════════════════════════
@@ -154,7 +166,7 @@ class XiaoChiyu(Star):
 
         # ── RP 变化（距上次查询）──
         rp_delta = await self.db.get_rp_delta(stats.uid, platform, stats.rank_score)
-        asyncio.create_task(self.db.save_rp(stats.uid, platform, stats.rank_score))
+        self._fire_and_forget(self.db.save_rp(stats.uid, platform, stats.rank_score), "保存RP")
 
         # ── 构建渲染数据 ──
         qq_avatar = f"https://q1.qlogo.cn/g?b=qq&nk={qq_id}&s=640"
@@ -361,8 +373,8 @@ class XiaoChiyu(Star):
 
     @filter.on_astrbot_loaded()
     async def start_cleaner(self):
-        asyncio.create_task(self._auto_clean_expired_teams())
-        asyncio.create_task(self._auto_clean_temp_files())
+        self._fire_and_forget(self._auto_clean_expired_teams(), "清理过期队伍")
+        self._fire_and_forget(self._auto_clean_temp_files(), "清理临时文件")
 
     async def _auto_clean_expired_teams(self):
         while True:
@@ -440,7 +452,7 @@ class XiaoChiyu(Star):
             )
 
         rp_delta = await self.db.get_rp_delta(stats.uid, platform, stats.rank_score)
-        asyncio.create_task(self.db.save_rp(stats.uid, platform, stats.rank_score))
+        self._fire_and_forget(self.db.save_rp(stats.uid, platform, stats.rank_score), "保存RP")
 
         qq_avatar = f"https://q1.qlogo.cn/g?b=qq&nk={qq_id}&s=640"
         profile_data = {
