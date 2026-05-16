@@ -183,6 +183,16 @@ class XiaoChiyu(Star):
         """查询 Apex 战绩 — /stats [玩家名或UID]"""
         qq_id = event.get_sender_id()
 
+        # AstrBot 会把空格拆开，从消息原文获取完整名字
+        if name and not name.strip().isdigit():
+            msg = event.message_str.strip()
+            for prefix in ("/stats ", "/查询 ", "/战绩 ", "/profile ", "/卡片 "):
+                if msg.startswith(prefix):
+                    full = msg[len(prefix):].strip()
+                    if full and full != name:
+                        name = full
+                    break
+
         if name:
             if name.strip().isdigit():
                 uid = name.strip()
