@@ -14,6 +14,11 @@ class NameToUIDResult:
         self.name = data.get("name", "")
         self.uid = str(data.get("uid", ""))
         self.avatar = data.get("avatar", "")
+        self.platform = data.get("platform", "")
+
+    @property
+    def display(self) -> str:
+        return f"{self.name} (UID: {self.uid})"
 
 
 class PlayerStats:
@@ -273,6 +278,19 @@ class ApexClient:
             return [NameToUIDResult(r) for r in results if r.get("uid")]
         except Exception:
             return []
+
+    async def search_player(
+        self, name: str, platform: str = "PC"
+    ) -> list[NameToUIDResult]:
+        """搜索结果 + 猜测可能的名字（ALS 网站搜索用）"""
+        results = await self.name_to_uid_all(name, platform)
+        if results:
+            return results
+        # 名字匹配不到，尝试去掉特殊字符
+        cleaned = name.replace(" ", "").replace("_", "")
+        if cleaned != name:
+            return await self.name_to_uid_all(cleaned, platform)
+        return []
 
     async def get_stats(self, uid: str, platform: str = "PC") -> Optional[PlayerStats]:
         try:

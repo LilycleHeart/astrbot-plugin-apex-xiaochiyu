@@ -109,6 +109,19 @@ class XiaoChiyu(Star):
             return
         result = results[0]
 
+        # 检查名字是否匹配
+        expected = name.strip().lower().replace(" ", "")
+        actual = result.name.lower().replace(" ", "")
+        if expected not in actual and actual not in expected:
+            img = await renderer.draw_text_card(
+                "名字可能不匹配",
+                f"搜索 '{name}' 返回了 '{result.name}' (UID: {result.uid})\n"
+                f"绑定将继续。如果不对，请用 /bind_uid {result.uid} 重新绑定",
+                is_error=False,
+            )
+            async for r in self._send_card(event, img):
+                yield r
+
         await self.db.upsert_user(qq_id, result.uid, result.name, platform)
         img = await renderer.draw_bind_card(result.uid, result.name, platform)
         async for r in self._send_card(event, img):
@@ -177,6 +190,20 @@ class XiaoChiyu(Star):
                         yield r
                     return
                 uid = results[0].uid
+                # 单结果时检查名字是否匹配
+                if len(results) == 1:
+                    expected = name.strip().lower().replace(" ", "")
+                    actual = results[0].name.lower().replace(" ", "")
+                    if expected not in actual and actual not in expected:
+                        img = await renderer.draw_text_card(
+                            "名字可能不匹配",
+                            f"搜索 '{name}' 返回了 '{results[0].name}' (UID: {uid})\n"
+                            f"如果不对，请用 /stats {uid} 或 /bind_uid {uid} 直接查",
+                            is_error=False,
+                        )
+                        async for r in self._send_card(event, img):
+                            yield r
+                        return
                 platform = "PC"
         else:
             user = await self.db.get_user(qq_id)
