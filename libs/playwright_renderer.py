@@ -738,26 +738,27 @@ def _map_url(map_name: str) -> str:
 
 
 _MAP_ZH = {
-    "Kings Canyon": "王者峽谷",
-    "World's Edge": "世界邊緣",
-    "Olympus": "奧林匹斯",
-    "Storm Point": "暴風點",
-    "Broken Moon": "殘月",
-    "E-District": "電流區",
+    # 大逃杀地图 (官方简中)
+    "Kings Canyon": "诸王峡谷",
+    "World's Edge": "世界尽头",
+    "Olympus": "奥林匹斯",
+    "Storm Point": "风暴点",
+    "Broken Moon": "残月",
+    "E-District": "电流区",
     # LTM / 竞技场
-    "Skulltown": "骷髏鎮",
-    "Skull Town": "骷髏鎮",
-    "Autumn Estates": "秋日莊園",
-    "Monument": "紀念碑",
+    "Skulltown": "骷髅镇",
+    "Skull Town": "骷髅镇",
+    "Autumn Estates": "秋日庄园",
+    "Monument": "纪念碑",
     "Siphon": "虹吸管",
-    "Caustic Treatment": "侵蝕療法",
-    "Estates": "秋日莊園",
+    "Caustic Treatment": "腐蚀疗法",
+    "Estates": "秋日庄园",
     "Phase Runner": "相位通道",
     "Overflow": "溢出",
-    "Habitat": "棲息地",
+    "Habitat": "栖息地",
     "Encore": "安可",
-    "Party Crasher": "派對破壞者",
-    "Drop-Off": "空降區",
+    "Party Crasher": "派对破坏者",
+    "Drop-Off": "空降区",
 }
 
 
