@@ -699,14 +699,17 @@ async def draw_server_status_card(server_status) -> bytes:
 #  地图轮换卡片
 # ══════════════════════════════════════════
 
-_MAP_BG = {
-    "Kings Canyon": "https://drop-assets.ea.com/images/2106fDsHrzPvx15EpUCHSe/fff15d2bdc1d278fe8b762ec81db10f6/apex-media-maps-kings-canyon-xl-l-m1.jpg",
-    "World's Edge": "https://drop-assets.ea.com/images/4suIbEk14qVTpGEOh0Zt9Q/72c2062cd32f22447beff2b5ed4ed58f/apex-media-maps-worlds-edge-xl-l-m.jpg",
-    "Olympus": "https://drop-assets.ea.com/images/1nbiZcYKD5exXWgecxZWNf/8af1c5a04b16e7c4e169dd421ada34ad/Apex_Maps-Olympus-1x1.jpg",
-    "Storm Point": "https://drop-assets.ea.com/images/1ZnzgvuwhHfVgbNGphL7OR/0e76b2875665ffc375f2d95e28dafd44/apex-media-maps-storm-point-xl-l-m.jpg",
-    "Broken Moon": "https://drop-assets.ea.com/images/3L05Q850J60jdpnzaMqi6n/b6ab5093e5bff08a84327e929b4ca2e0/apex-media-maps-broken-moon-xl-l-m.jpg",
-    "E-District": "https://drop-assets.ea.com/images/6NXmn5uRFXPffRFWd64YjD/808cd2ad017acdf363b16274357d11df/apex-media-maps-e-district-xl.jpg",
-}
+_MAP_BASE = "https://apexlegendsstatus.com/assets/maps"
+
+
+def _map_url(map_name: str) -> str:
+    """根据地图名生成ALS地图图片URL"""
+    if not map_name:
+        return ""
+    # 去撇号 + 空格替换
+    slug = map_name.replace("'", "").replace(" ", "_")
+    return f"{_MAP_BASE}/{slug}.png"
+
 
 _MAP_ZH = {
     "Kings Canyon": "王者峽谷",
@@ -724,8 +727,8 @@ def _build_map_rotation_html(rotation) -> str:
         nxt_map = next_.map if next_ else ""
         cur_zh = _MAP_ZH.get(cur_map, cur_map)
         nxt_zh = _MAP_ZH.get(nxt_map, nxt_map)
-        cur_bg = _MAP_BG.get(cur_map, "")
-        nxt_bg = _MAP_BG.get(nxt_map, "")
+        cur_bg = _map_url(cur_map)
+        nxt_bg = _map_url(nxt_map)
         timer = current.remaining_timer if current else ""
 
         cur_bg_css = f"background-image:url({cur_bg})" if cur_bg else ""
