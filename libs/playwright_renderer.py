@@ -597,7 +597,7 @@ async def _fetch_and_cache_image(url: str) -> str:
         return url
 
 
-async def _embed_images(html: str, timeout: float = 2.0) -> str:
+async def _embed_images(html: str, timeout: float = 5.0) -> str:
     """将远程图片URL替换为base64，可指定超时"""
     # 匹配 <img src="https://..."> 和 url(https://...)
     img_urls = re.findall(r'src="(https?://[^"]+)"', html)
