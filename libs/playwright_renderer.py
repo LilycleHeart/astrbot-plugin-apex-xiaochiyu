@@ -744,6 +744,20 @@ _MAP_ZH = {
     "Storm Point": "暴風點",
     "Broken Moon": "殘月",
     "E-District": "電流區",
+    # LTM / 竞技场
+    "Skulltown": "骷髏鎮",
+    "Skull Town": "骷髏鎮",
+    "Autumn Estates": "秋日莊園",
+    "Monument": "紀念碑",
+    "Siphon": "虹吸管",
+    "Caustic Treatment": "侵蝕療法",
+    "Estates": "秋日莊園",
+    "Phase Runner": "相位通道",
+    "Overflow": "溢出",
+    "Habitat": "棲息地",
+    "Encore": "安可",
+    "Party Crasher": "派對破壞者",
+    "Drop-Off": "空降區",
 }
 
 
