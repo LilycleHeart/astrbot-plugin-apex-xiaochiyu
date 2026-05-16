@@ -12,7 +12,7 @@ from PIL import Image
 from .config import RANK_COLORS
 from .playwright_manager import run_with_page
 
-# ── MD3 深色主题配色 (种子色: Apex红 #DA292A) ──
+# ── MD3 深色主题配色 (默认: Apex红) ──
 _C_SURFACE = "#141010"
 _C_CARD = "#1E1616"
 _C_CARD2 = "#251B1C"
@@ -24,6 +24,61 @@ _C_GOLD = "#E7C150"
 _C_DIAMOND = "#5D9FF0"
 _C_MASTER = "#C58BFF"
 _C_PRED = "#DA292A"
+
+# ── MD3 每段位动态深色主题 ──
+_RANK_THEMES = {
+    "Bronze": {
+        "surface": "#14100D", "card": "#1E1712", "card2": "#261D17",
+        "card3": "#33261D", "text": "#EDDECE", "muted": "#D4C2AD",
+        "outline": "#55473A", "primary": "#FFB693",
+    },
+    "Silver": {
+        "surface": "#101113", "card": "#18191C", "card2": "#1F2125",
+        "card3": "#292C30", "text": "#E0E2E9", "muted": "#C2C5D0",
+        "outline": "#464A52", "primary": "#B0C6D8",
+    },
+    "Gold": {
+        "surface": "#13100A", "card": "#1D1710", "card2": "#251E13",
+        "card3": "#32281A", "text": "#ECE0CE", "muted": "#D4C4AD",
+        "outline": "#55442E", "primary": "#EAC14D",
+    },
+    "Platinum": {
+        "surface": "#0E1213", "card": "#161B1D", "card2": "#1C2326",
+        "card3": "#262E32", "text": "#DBE5E8", "muted": "#BEC9CE",
+        "outline": "#434D52", "primary": "#64C3D3",
+    },
+    "Diamond": {
+        "surface": "#0F1218", "card": "#171A22", "card2": "#1D222C",
+        "card3": "#272D39", "text": "#DDE4F3", "muted": "#BFC7DA",
+        "outline": "#444C5C", "primary": "#6DA8FF",
+    },
+    "Master": {
+        "surface": "#131016", "card": "#1C1821", "card2": "#221E2A",
+        "card3": "#2E2837", "text": "#EAE0F5", "muted": "#D2C3E3",
+        "outline": "#544B60", "primary": "#B184FF",
+    },
+    "Predator": {
+        "surface": "#160E0F", "card": "#221415", "card2": "#2A191B",
+        "card3": "#392024", "text": "#F2DDDF", "muted": "#DCBFC2",
+        "outline": "#614445", "primary": "#FF6B6B",
+    },
+    "Rookie": {
+        "surface": "#101112", "card": "#18191C", "card2": "#1F2124",
+        "card3": "#292B2F", "text": "#DFE2E8", "muted": "#C1C5CC",
+        "outline": "#44474F", "primary": "#8D929E",
+    },
+    "Unranked": {
+        "surface": "#101112", "card": "#18191C", "card2": "#1F2124",
+        "card3": "#292B2F", "text": "#DFE2E8", "muted": "#C1C5CC",
+        "outline": "#44474F", "primary": "#8D929E",
+    },
+}
+
+
+def _theme_for_rank(rank_name: str) -> dict:
+    """根据段位名返回 MD3 深色主题配色"""
+    major = rank_name.split(" ")[0] if rank_name else "Unranked"
+    return _RANK_THEMES.get(major, _RANK_THEMES["Rookie"])
 
 
 # ── 汉化映射 ──
@@ -110,9 +165,11 @@ def _roman(n: int) -> str:
 
 
 def _build_rank_dist(
-    player_rank: str, player_top_pct: float, rank_dist_entries: list = None
+    player_rank: str, player_top_pct: float, rank_dist_entries: list = None, *, theme: dict = None
 ) -> str:
     """段位分布 — 仅显示玩家所在段位附近4个段位，含人数"""
+    card3 = theme["card3"] if theme else _C_CARD3
+    muted = theme["muted"] if theme else _C_MUTED
     if rank_dist_entries:
         tiers = [(e.name, e.pct, e.color, e.count) for e in rank_dist_entries]
     else:
@@ -159,14 +216,14 @@ def _build_rank_dist(
             f'{"background:rgba(149,83,211,0.06);border-radius:8px;" if is_player else ""}">'
             f'<span style="width:50px;text-align:right;font-size:12px;color:{color};{weight}">{name_zh}</span>'
             f"{arrow}"
-            f'<div style="flex:1;height:6px;background:{_C_CARD3};border-radius:3px;overflow:hidden;">'
+            f'<div style="flex:1;height:6px;background:{card3};border-radius:3px;overflow:hidden;">'
             f'<div style="height:100%;width:{bar_pct}%;background:{color};border-radius:3px;{"box-shadow:0 0 8px " + color if is_player else ""}"></div>'
             f"</div>"
-            f'<span style="width:44px;font-size:11px;text-align:right;color:{_C_MUTED};{weight}">{pct:.2f}%</span>'
-            f'<span style="width:64px;font-size:11px;text-align:right;color:{_C_MUTED};">{count_str}</span>'
+            f'<span style="width:44px;font-size:11px;text-align:right;color:{muted};{weight}">{pct:.2f}%</span>'
+            f'<span style="width:64px;font-size:11px;text-align:right;color:{muted};">{count_str}</span>'
             f"</div>"
         )
-    footer = f'<div style="padding:4px 24px 8px;font-size:11px;color:{_C_MUTED};text-align:center;">'
+    footer = f'<div style="padding:4px 24px 8px;font-size:11px;color:{muted};text-align:center;">'
     if total_players:
         footer += f"全服 {total_players:,} 名玩家中，Top {player_top_pct}%"
     else:
@@ -194,6 +251,17 @@ def _build_stats_html(**d) -> str:
     rank_img = d.get("rank_img", d.get("rank_icon_url", ""))
     rank_top_pct = d.get("rank_top_pct", 0)
     rank_top_pct_global = d.get("rank_top_pct_global", rank_top_pct)
+
+    # ── 根据段位动态取色 ──
+    _theme = _theme_for_rank(rank_name)
+    _C_SURFACE = _theme["surface"]
+    _C_CARD = _theme["card"]
+    _C_CARD2 = _theme["card2"]
+    _C_CARD3 = _theme["card3"]
+    _C_TEXT = _theme["text"]
+    _C_MUTED = _theme["muted"]
+    _C_OUTLINE = _theme["outline"]
+
     rp_delta = d.get("rp_delta")
     kills = d.get("kills", 0)
     damage = d.get("damage", 0)
@@ -313,7 +381,7 @@ def _build_stats_html(**d) -> str:
 </div>"""
 
     # ── 段位分布参考条 ──
-    rank_dist = _build_rank_dist(rank_name, rank_top_pct, rank_dist_entries)
+    rank_dist = _build_rank_dist(rank_name, rank_top_pct, rank_dist_entries, theme=_theme)
 
     badge_section = ""
     if badge_rows:
