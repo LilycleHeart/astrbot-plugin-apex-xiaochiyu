@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import asyncio
 import base64
 import io
-import re
 
 from PIL import Image
 
@@ -552,88 +550,15 @@ def _render_moe_number_base64(number: int) -> str:
     return base64.b64encode(buf.getvalue()).decode()
 
 
+
+
 # ══════════════════════════════════════════
-#  图片缓存 — 远程URL→base64，零网络请求渲染
+#  公开接口
 # ══════════════════════════════════════════
 
-_image_cache: dict[str, str] = {}
 
-
-def _resize_for_card(data: bytes, max_w: int = 160) -> bytes:
-    try:
-        img = Image.open(io.BytesIO(data))
-        w, h = img.size
-        if w > max_w:
-            ratio = max_w / w
-            img = img.resize((max_w, int(h * ratio)), Image.LANCZOS)
-        if img.mode != "RGBA":
-            img = img.convert("RGBA")
-        buf = io.BytesIO()
-        img.save(buf, format="PNG", optimize=True)
-        return buf.getvalue()
-    except Exception:
-        return data
-
-
-async def _fetch_and_cache_image(url: str) -> str:
-    """异步下载图片并缓存为base64"""
-    if url.startswith("data:"):
-        return url
-    cached = _image_cache.get(url)
-    if cached:
-        return cached
-    from .http_client import get_async_client
-    try:
-        client = await get_async_client()
-        resp = await client.get(url, timeout=8.0)
-        resp.raise_for_status()
-        # 地图背景图不缩放，头像/徽章缩到160px
-        is_map = "/assets/maps/" in url
-        data = resp.content if is_map else _resize_for_card(resp.content)
-        b64 = base64.b64encode(data).decode()
-        _image_cache[url] = f"data:image/png;base64,{b64}"
-        return _image_cache[url]
-    except Exception:
-        return url
-
-
-async def _embed_images(html: str, timeout: float = 10.0) -> str:
-    """将远程图片URL替换为base64，可指定超时"""
-    # 匹配 <img src="https://..."> 和 url(https://...)
-    img_urls = re.findall(r'src="(https?://[^"]+)"', html)
-    css_urls = re.findall(r'url\((https?://[^)]+)\)', html)
-    all_urls = list(set(img_urls + css_urls))
-    uncached = [u for u in all_urls if u not in _image_cache]
-
-    if uncached:
-        tasks = [_fetch_and_cache_image(u) for u in uncached]
-        try:
-            await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=timeout)
-        except asyncio.TimeoutError:
-            pass
-
-    def _replace_all(m):
-        url = m.group(1)
-        mapped = _image_cache.get(url)
-        return m.group(0).replace(url, mapped) if mapped else m.group(0)
-
-    html = re.sub(r'src="(https?://[^"]+)"', _replace_all, html)
-    html = re.sub(r'url\((https?://[^)]+)\)', _replace_all, html)
-    return html
-
-
-async def _render_card_sync(html: str, width: int, img_timeout: float = 2.0) -> bytes:
-    html = await _embed_images(html, timeout=img_timeout)
+async def _render_card_sync(html: str, width: int) -> bytes:
     async with run_with_page(viewport={"width": width, "height": 100}, device_scale_factor=2) as page:
-        # 屏蔽无用外部资源（图片已base64嵌入，少数未缓存的不拦截）
-        await page.route(
-            "**/*",
-            lambda route: (
-                route.abort()
-                if route.request.resource_type in ("stylesheet", "font", "media")
-                else route.continue_()
-            ),
-        )
         await page.set_content(html, wait_until="domcontentloaded", timeout=15000)
         await page.wait_for_selector(".card", timeout=10000)
         card_height = await page.evaluate(
@@ -859,7 +784,7 @@ body{{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;background:{_C_SUR
 
 async def draw_map_rotation_card(rotation) -> bytes:
     html = _build_map_rotation_html(rotation)
-    return await _render_card_sync(html, 720, img_timeout=8.0)
+    return await _render_card_sync(html, 720)
 
 
 # ══════════════════════════════════════════
