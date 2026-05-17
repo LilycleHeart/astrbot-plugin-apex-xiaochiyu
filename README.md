@@ -191,3 +191,6 @@ python -m playwright install webkit
 ## ⭐ Star 支持
 
 如果这个插件对你有帮助，欢迎点个 Star 支持一下项目。
+## 赞助页
+感谢以下用户对本项目的赞助支持
+唯念
