@@ -1516,7 +1516,8 @@ async def draw_player_list_card(
             rank_html += f'<span class="rank-badge" style="color:{rc}">\u2666 {rank_name}</span>'
         if rp_val:
             rp_fmt = f"{int(rp_val):,} RP" if rp_val.isdigit() else rp_val
-            rank_html += f'<span class="rp">{(" \u00b7 " if rank_html else "") + rp_fmt}</span>'
+            sep = " \u00b7 " if rank_html else ""
+            rank_html += f'<span class="rp">{sep}{rp_fmt}</span>'
 
         cards_html += f"""<div class="player-card">
             <div class="badge">{i+1}</div>
