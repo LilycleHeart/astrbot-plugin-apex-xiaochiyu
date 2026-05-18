@@ -378,6 +378,21 @@ class XiaoChiyu(Star):
         async for r in self._send_card(event, img):
             yield r
 
+    @filter.command("perf", alias={"性能"})
+    async def cmd_perf(self, event: AstrMessageEvent):
+        """查看 Playwright 浏览器性能"""
+        from .libs.playwright_manager import get_pw_stats
+        stats = get_pw_stats()
+        if not stats:
+            yield event.plain_result("暂无性能数据")
+            return
+        lines = ["[Playwright 性能]"]
+        for k, v in stats.items():
+            lines.append(
+                f"{k}: avg={v['avg']:.2f}s max={v['max']:.2f}s min={v['min']:.2f}s ({v['count']}次)"
+            )
+        yield event.plain_result("\n".join(lines))
+
     # ═══════════════════════════════════════════════
     #  队伍系统
     # ═══════════════════════════════════════════════
