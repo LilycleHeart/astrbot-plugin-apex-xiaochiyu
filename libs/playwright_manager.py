@@ -1,34 +1,34 @@
-"""共享 Playwright 浏览器管理器 — 单一持久进程，全局复用"""
+"""共享 Playwright 浏览器管理器 — 单一持久进程，Context 池复用"""
 
 from __future__ import annotations
 
 import asyncio
 import time
 from contextlib import asynccontextmanager
-from playwright.async_api import async_playwright, Browser
+from playwright.async_api import async_playwright, Browser, BrowserContext
 
 _playwright = None
 _browser: Browser | None = None
 _lock = asyncio.Lock()
 _semaphore = asyncio.Semaphore(2)
+_context_pool: asyncio.Queue[BrowserContext] = asyncio.Queue()
+_CONTEXT_POOL_SIZE = 2
 
 # 性能监控
 _stats: dict[str, list[float]] = {
-    "sem_wait": [],   # 等待信号量的耗时
-    "ctx_create": [],  # 创建上下文的耗时
-    "page_use": [],    # 使用页面的总耗时
+    "sem_wait": [],
+    "ctx_create": [],
+    "page_use": [],
 }
 
 
 def _log_stat(key: str, value: float):
     _stats[key].append(value)
-    # 保留最近20条
     if len(_stats[key]) > 20:
         _stats[key] = _stats[key][-20:]
 
 
 def get_pw_stats() -> dict:
-    """获取 Playwright 性能统计"""
     result = {}
     for k, v in _stats.items():
         if v:
@@ -53,6 +53,12 @@ async def get_browser() -> Browser:
 
 async def close_browser():
     global _playwright, _browser
+    while not _context_pool.empty():
+        try:
+            ctx = _context_pool.get_nowait()
+            await ctx.close()
+        except Exception:
+            pass
     if _browser:
         await _browser.close()
         _browser = None
@@ -61,24 +67,42 @@ async def close_browser():
         _playwright = None
 
 
+async def _get_context() -> BrowserContext:
+    try:
+        return _context_pool.get_nowait()
+    except asyncio.QueueEmpty:
+        browser = await get_browser()
+        t0 = time.perf_counter()
+        ctx = await browser.new_context(viewport={"width": 1280, "height": 800})
+        _log_stat("ctx_create", time.perf_counter() - t0)
+        return ctx
+
+
+async def _return_context(ctx: BrowserContext):
+    if _context_pool.qsize() < _CONTEXT_POOL_SIZE:
+        await _context_pool.put(ctx)
+    else:
+        await ctx.close()
+
+
 @asynccontextmanager
 async def run_with_page(viewport: dict = None, device_scale_factor: float = 1):
     t_wait = time.perf_counter()
     async with _semaphore:
         _log_stat("sem_wait", time.perf_counter() - t_wait)
 
-        t_ctx = time.perf_counter()
-        browser = await get_browser()
-        ctx = await browser.new_context(
-            viewport=viewport,
-            device_scale_factor=device_scale_factor,
-        )
+        ctx = await _get_context()
         page = await ctx.new_page()
-        _log_stat("ctx_create", time.perf_counter() - t_ctx)
+        if viewport:
+            await page.set_viewport_size(viewport)
+        if device_scale_factor != 1:
+            # 已有 context 的 scale 不变，这里仅用于截图场景的特殊 viewport
+            pass
 
         t_use = time.perf_counter()
         try:
             yield page
         finally:
             _log_stat("page_use", time.perf_counter() - t_use)
-            await ctx.close()
+            await page.close()
+            await _return_context(ctx)

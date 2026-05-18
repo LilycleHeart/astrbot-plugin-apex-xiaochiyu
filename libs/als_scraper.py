@@ -7,6 +7,7 @@ from urllib.parse import quote
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 from .playwright_manager import run_with_page
+from .ttl_cache import get as cache_get, set as cache_set
 
 
 async def _block_noise(page):
@@ -79,9 +80,16 @@ async def _do_fetch(page, name_or_uid: str, platform: str) -> dict:
 
 
 async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
-    """从 ALS 个人页面抓取赛季徽章和特殊徽章（仅网络超时重试，空数据不重试）"""
+    """从 ALS 个人页面抓取赛季徽章和特殊徽章（仅网络超时重试，空数据不重试，TTL 缓存1h）"""
     import time
     from astrbot.api import logger
+
+    cache_key = f"badges:{platform}:{name_or_uid}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        logger.info(f"[BadgeFetcher] 缓存命中 {cache_key}")
+        return cached
+
     t0 = time.time()
 
     for attempt in range(2):
@@ -90,6 +98,8 @@ async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
                 result = await _do_fetch(page, name_or_uid, platform)
                 dt = time.time() - t0
                 logger.info(f"[BadgeFetcher] 耗时: {dt:.1f}s (attempt={attempt+1})")
+                if result.get("seasons") or result.get("special"):
+                    await cache_set(cache_key, result, 3600)
                 return result
         except PlaywrightTimeoutError:
             if attempt == 0:
@@ -107,9 +117,16 @@ async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
 
 
 async def search_players(name: str, platform: str = "PC") -> list[dict]:
-    """访问ALS玩家页面，从DOM提取数据"""
+    """访问ALS玩家页面，从DOM提取数据（TTL 缓存5分钟）"""
     import time
     from astrbot.api import logger
+
+    cache_key = f"search:{platform}:{name.lower().strip()}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        logger.info(f"[SearchPlayers] 缓存命中 {cache_key}")
+        return cached
+
     t0 = time.time()
     encoded = quote(name, safe="")
     url = f"https://apexlegendsstatus.com/profile/{platform}/{encoded}"
@@ -147,6 +164,8 @@ async def search_players(name: str, platform: str = "PC") -> list[dict]:
                 const seen = new Set();
                 return items.filter(i => { const k = i.uid; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 10);
             }""")
+            if result:
+                await cache_set(cache_key, result, 300)
             return result
         except Exception as e:
             logger.error(f"[SearchPlayers] Error: {e}")

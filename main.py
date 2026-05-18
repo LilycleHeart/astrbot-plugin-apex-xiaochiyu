@@ -57,8 +57,10 @@ class XiaoChiyu(Star):
         await self.db.init()
         from .libs.image_renderer import _download_moe_digits_async
         from .libs.ttl_cache import start_cleaner
+        from .libs.playwright_manager import get_browser
 
-        self._fire_and_forget(_download_moe_digits_async(), "Moe数字预加载")
+        asyncio.create_task(get_browser())
+        asyncio.create_task(_download_moe_digits_async())
         start_cleaner()
 
     async def terminate(self):

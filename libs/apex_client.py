@@ -240,6 +240,8 @@ class ApexClient:
                 base_url=BASE_URL,
                 timeout=httpx.Timeout(15.0),
                 headers={"Authorization": self.api_key},
+                http2=True,
+                limits=httpx.Limits(max_keepalive_connections=20),
             )
         return self._client
 
