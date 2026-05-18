@@ -79,6 +79,11 @@ FONT_SIZES = {
 
 
 def load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
+    """从预加载缓存取字体，无缓存则创建"""
+    key = f"{'bold' if bold else 'reg'}_{size}"
+    if key in _FONT_CACHE:
+        return _FONT_CACHE[key]
+
     candidates = list(FONT_PATHS)
     if bold:
         bold_path = str(
@@ -88,10 +93,22 @@ def load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
 
     for path in candidates:
         try:
-            return ImageFont.truetype(path, size)
+            font = ImageFont.truetype(path, size)
+            _FONT_CACHE[key] = font
+            return font
         except (OSError, IOError, AttributeError):
             continue
     return ImageFont.load_default()
+
+
+_FONT_CACHE: dict[str, ImageFont.FreeTypeFont] = {}
+
+
+def preload_fonts() -> None:
+    """预加载所有常用字号到内存，避免运行时磁盘 I/O"""
+    for size in sorted(set(FONT_SIZES.values())):
+        load_font(size, bold=False)
+        load_font(size, bold=True)
 
 
 def get_rank_color(rank_name: str) -> str:

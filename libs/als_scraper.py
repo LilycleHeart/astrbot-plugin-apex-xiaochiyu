@@ -116,7 +116,7 @@ async def search_players(name: str, platform: str = "PC") -> list[dict]:
     async with run_with_page() as page:
         try:
             await _block_noise(page)
-            await page.goto(url, wait_until="domcontentloaded", timeout=15000)
+            await page.goto(url, wait_until="commit", timeout=10000)
             logger.info(f"[SearchPlayers] 实际URL: {page.url} (请求: {url})")
             dt = time.time() - t0
             logger.info(f"[SearchPlayers] 页面加载耗时: {dt:.1f}s")

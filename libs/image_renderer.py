@@ -1594,7 +1594,7 @@ body {{
 </div></body></html>"""
 
     try:
-        async with run_with_page(viewport={"width": 560, "height": 800}, device_scale_factor=2) as page:
+        async with run_with_page(viewport={"width": 560, "height": 800}, device_scale_factor=1.5) as page:
             await page.set_content(html, wait_until="domcontentloaded")
             card = await page.query_selector(".card-container")
             if card:

@@ -36,6 +36,9 @@ class XiaoChiyu(Star):
 
         self._last_search: dict[str, list[dict]] = {}
 
+        from .libs.config import preload_fonts
+        preload_fonts()
+
         self._fire_and_forget(self._on_init(), "DB初始化")
 
     def _fire_and_forget(self, coro, name: str = ""):
@@ -53,8 +56,10 @@ class XiaoChiyu(Star):
     async def _on_init(self):
         await self.db.init()
         from .libs.image_renderer import _download_moe_digits_async
+        from .libs.ttl_cache import start_cleaner
 
         self._fire_and_forget(_download_moe_digits_async(), "Moe数字预加载")
+        start_cleaner()
 
     async def terminate(self):
         await self.apex.close()

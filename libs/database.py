@@ -20,10 +20,21 @@ class Database:
 
     async def _get_conn(self) -> aiosqlite.Connection:
         if self._conn is None:
-            self._conn = await aiosqlite.connect(str(self.db_path))
-            await self._conn.execute("PRAGMA journal_mode=WAL")
-            await self._conn.execute("PRAGMA foreign_keys=ON")
-            self._conn.row_factory = aiosqlite.Row
+            async with self._lock:
+                if self._conn is None:
+                    self._conn = await aiosqlite.connect(str(self.db_path))
+                    await self._conn.execute("PRAGMA journal_mode=WAL")
+                    await self._conn.execute("PRAGMA foreign_keys=ON")
+                    self._conn.row_factory = aiosqlite.Row
+        else:
+            try:
+                await self._conn.execute("SELECT 1")
+            except Exception:
+                async with self._lock:
+                    self._conn = await aiosqlite.connect(str(self.db_path))
+                    await self._conn.execute("PRAGMA journal_mode=WAL")
+                    await self._conn.execute("PRAGMA foreign_keys=ON")
+                    self._conn.row_factory = aiosqlite.Row
         return self._conn
 
     async def close(self):
@@ -66,6 +77,8 @@ class Database:
                 PRIMARY KEY (uid, platform)
             );
         """)
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_rp_uid_plat ON rp_history(uid, platform)")
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_teams_expires ON teams(expires_at)")
         await conn.commit()
         logger.info("[Database] SQLite tables ready (WAL mode)")
 
