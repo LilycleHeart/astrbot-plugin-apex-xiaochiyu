@@ -480,13 +480,12 @@ def _draw_stats_sync(stats) -> bytes:
         footer = f"当前选用: {stats.selected_legend}"
         draw.text((cx, cy), footer, font=FONT_CAPTION, fill=MUTED)
 
-    # 数据来源
+    # 数据来源 + 署名
     cy = card_y + card_h - PADDING - FONT_SIZES["small"]
-    _draw_centered_text(
-        draw, "Data: apexlegendsstatus.com", card_x, cy, card_w, FONT_SMALL, fill=MUTED
-    )
-
-    _draw_centered_text(draw, "赤羽真白", card_x, card_y + card_h - FONT_SIZES["caption"] - 8, card_w, FONT_CAPTION, fill=MUTED)
+    draw.text((card_x + PADDING, cy), "Data: apexlegendsstatus.com", font=FONT_SMALL, fill=MUTED)
+    wm = "赤羽真白"
+    wm_w, _ = _text_bbox(draw, wm, FONT_SMALL)
+    draw.text((card_x + card_w - PADDING - wm_w, cy), wm, font=FONT_SMALL, fill=MUTED)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -574,19 +573,12 @@ def _draw_map_sync(rotation) -> bytes:
         draw.text((cx, cy), ltm_text, font=FONT_BODY, fill=ACCENT_GREEN)
         cy += FONT_SIZES["body"] + 4
 
-    # 数据来源
+    # 数据来源 + 署名
     bottom_y = card_y + card_h - PADDING - FONT_SIZES["small"]
-    _draw_centered_text(
-        draw,
-        "Data: apexlegendsstatus.com",
-        card_x,
-        bottom_y,
-        card_w,
-        FONT_SMALL,
-        fill=MUTED,
-    )
-
-    _draw_centered_text(draw, "赤羽真白", card_x, card_y + card_h - FONT_SIZES["caption"] - 8, card_w, FONT_CAPTION, fill=MUTED)
+    draw.text((card_x + PADDING, bottom_y), "Data: apexlegendsstatus.com", font=FONT_SMALL, fill=MUTED)
+    wm = "赤羽真白"
+    wm_w, _ = _text_bbox(draw, wm, FONT_SMALL)
+    draw.text((card_x + card_w - PADDING - wm_w, bottom_y), wm, font=FONT_SMALL, fill=MUTED)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -688,19 +680,12 @@ def _draw_master_sync(predator) -> bytes:
             0,
         )
 
-    # Footer
+    # Footer + 署名
     bottom_y = card_y + card_h - PADDING - FONT_SIZES["small"] - 2
-    _draw_centered_text(
-        draw,
-        "Data: apexlegendsstatus.com",
-        card_x,
-        bottom_y,
-        card_w,
-        FONT_SMALL,
-        fill=MUTED,
-    )
-
-    _draw_centered_text(draw, "赤羽真白", card_x, card_y + card_h - FONT_SIZES["caption"] - 8, card_w, FONT_CAPTION, fill=MUTED)
+    draw.text((card_x + PADDING, bottom_y), "Data: apexlegendsstatus.com", font=FONT_SMALL, fill=MUTED)
+    wm = "赤羽真白"
+    wm_w, _ = _text_bbox(draw, wm, FONT_SMALL)
+    draw.text((card_x + card_w - PADDING - wm_w, bottom_y), wm, font=FONT_SMALL, fill=MUTED)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -1409,17 +1394,10 @@ def _draw_profile_sync(
 
     # ── Footer ──
     bottom_y = card_y + card_h - PADDING - FONT_SIZES["small"]
-    _draw_centered_text(
-        draw,
-        "Data: apexlegendsstatus.com",
-        card_x,
-        bottom_y,
-        card_w,
-        FONT_SMALL,
-        fill=MUTED,
-    )
-
-    _draw_centered_text(draw, "赤羽真白", card_x, card_y + card_h - FONT_SIZES["caption"] - 8, card_w, FONT_CAPTION, fill=MUTED)
+    draw.text((card_x + PADDING, bottom_y), "Data: apexlegendsstatus.com", font=FONT_SMALL, fill=MUTED)
+    wm = "赤羽真白"
+    wm_w, _ = _text_bbox(draw, wm, FONT_SMALL)
+    draw.text((card_x + card_w - PADDING - wm_w, bottom_y), wm, font=FONT_SMALL, fill=MUTED)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
