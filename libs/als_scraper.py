@@ -4,12 +4,32 @@ from __future__ import annotations
 
 from urllib.parse import quote
 
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+
 from .playwright_manager import run_with_page
+
+
+async def _block_noise(page):
+    """拦截图片/字体/媒体/统计请求，加速页面加载"""
+    await page.route(
+        "**/*",
+        lambda route: route.abort()
+        if route.request.resource_type in ("image", "font", "media", "stylesheet")
+        or "analytics" in (route.request.url or "")
+        or "googletagmanager" in (route.request.url or "")
+        or "cookieconsent" in (route.request.url or "")
+        else route.continue_(),
+    )
 
 
 async def _do_fetch(page, name_or_uid: str, platform: str) -> dict:
     url = f"https://apexlegendsstatus.com/profile/{platform}/{name_or_uid}"
-    await page.goto(url, wait_until="networkidle", timeout=30000)
+    await _block_noise(page)
+    await page.goto(url, wait_until="domcontentloaded", timeout=15000)
+    try:
+        await page.wait_for_selector(".player-name", timeout=5000)
+    except Exception:
+        pass
     return await page.evaluate("""() => {
         const colors = {
             bronze:'#cd7f32',silver:'#c0c0c0',gold:'#ffd700',
@@ -59,7 +79,7 @@ async def _do_fetch(page, name_or_uid: str, platform: str) -> dict:
 
 
 async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
-    """从 ALS 个人页面抓取赛季徽章和特殊徽章，空数据自动重试一次"""
+    """从 ALS 个人页面抓取赛季徽章和特殊徽章（仅网络超时重试，空数据不重试）"""
     import time
     from astrbot.api import logger
     t0 = time.time()
@@ -68,17 +88,20 @@ async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
         try:
             async with run_with_page() as page:
                 result = await _do_fetch(page, name_or_uid, platform)
-                if result.get("seasons") or result.get("kills"):
-                    dt = time.time() - t0
-                    logger.info(f"[BadgeFetcher] 耗时: {dt:.1f}s")
-                    return result
-                if attempt == 0:
-                    logger.warning(f"[BadgeFetcher] 数据为空，重试... {name_or_uid}")
+                dt = time.time() - t0
+                logger.info(f"[BadgeFetcher] 耗时: {dt:.1f}s (attempt={attempt+1})")
+                return result
+        except PlaywrightTimeoutError:
+            if attempt == 0:
+                logger.warning(f"[BadgeFetcher] 网络超时，重试... {name_or_uid}")
+                continue
+            logger.error(f"[BadgeFetcher] 连续超时，放弃 {name_or_uid}")
         except Exception as e:
             if attempt == 0:
                 logger.warning(f"[BadgeFetcher] 失败，重试... {e}")
-            else:
-                logger.error(f"[BadgeFetcher] Error: {e}")
+                continue
+            logger.error(f"[BadgeFetcher] Error: {e}")
+            break
 
     return {"seasons": [], "special": []}
 
@@ -92,19 +115,13 @@ async def search_players(name: str, platform: str = "PC") -> list[dict]:
     url = f"https://apexlegendsstatus.com/profile/{platform}/{encoded}"
     async with run_with_page() as page:
         try:
-            await page.goto(url, wait_until="networkidle", timeout=30000)
-            from astrbot.api import logger
+            await _block_noise(page)
+            await page.goto(url, wait_until="domcontentloaded", timeout=15000)
             logger.info(f"[SearchPlayers] 实际URL: {page.url} (请求: {url})")
             dt = time.time() - t0
             logger.info(f"[SearchPlayers] 页面加载耗时: {dt:.1f}s")
-            # 截图存 debug_screenshots/
-            import uuid, os
-            debug_dir = os.path.join(os.path.dirname(__file__), "..", "debug_screenshots")
-            os.makedirs(debug_dir, exist_ok=True)
-            safe_name = name.replace(" ", "_").replace("/", "_")[:30]
-            await page.screenshot(path=os.path.join(debug_dir, f"search_{safe_name}.png"), full_page=True)
             try:
-                await page.wait_for_selector(".player-name", timeout=10000)
+                await page.wait_for_selector(".player-name", timeout=5000)
             except Exception:
                 pass
             result = await page.evaluate("""() => {
@@ -132,6 +149,5 @@ async def search_players(name: str, platform: str = "PC") -> list[dict]:
             }""")
             return result
         except Exception as e:
-            from astrbot.api import logger
             logger.error(f"[SearchPlayers] Error: {e}")
             return []
