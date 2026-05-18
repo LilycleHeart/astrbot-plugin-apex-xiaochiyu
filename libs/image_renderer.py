@@ -1479,7 +1479,9 @@ async def draw_player_list_card(
     players: list[dict], hint: str = ""
 ) -> bytes:
     """使用 Playwright 渲染玩家列表卡片"""
+    import time
     from .playwright_manager import run_with_page
+    t0 = time.time()
 
     plat_colors = {
         "PC": "#4DABF7", "PS4": "#4ECDC4", "X1": "#4CE5B1",
@@ -1593,11 +1595,16 @@ body {{
 
     try:
         async with run_with_page(viewport={"width": 560, "height": 800}, device_scale_factor=2) as page:
-            await page.set_content(html, wait_until="networkidle")
+            await page.set_content(html, wait_until="domcontentloaded")
             card = await page.query_selector(".card-container")
             if card:
-                return await card.screenshot(type="png")
-            return await page.screenshot(type="png", full_page=True)
+                png = await card.screenshot(type="png")
+            else:
+                png = await page.screenshot(type="png", full_page=True)
+            dt = time.time() - t0
+            from astrbot.api import logger
+            logger.info(f"[PW卡片] 渲染耗时: {dt:.1f}s ({len(players)}个玩家)")
+            return png
     except Exception:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(_executor, _draw_player_list_sync, players, hint)

@@ -60,13 +60,17 @@ async def _do_fetch(page, name_or_uid: str, platform: str) -> dict:
 
 async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
     """从 ALS 个人页面抓取赛季徽章和特殊徽章，空数据自动重试一次"""
+    import time
     from astrbot.api import logger
+    t0 = time.time()
 
     for attempt in range(2):
         try:
             async with run_with_page() as page:
                 result = await _do_fetch(page, name_or_uid, platform)
                 if result.get("seasons") or result.get("kills"):
+                    dt = time.time() - t0
+                    logger.info(f"[BadgeFetcher] 耗时: {dt:.1f}s")
                     return result
                 if attempt == 0:
                     logger.warning(f"[BadgeFetcher] 数据为空，重试... {name_or_uid}")
@@ -81,6 +85,9 @@ async def fetch_badges(name_or_uid: str, platform: str = "PC") -> dict:
 
 async def search_players(name: str, platform: str = "PC") -> list[dict]:
     """访问ALS玩家页面，从DOM提取数据"""
+    import time
+    from astrbot.api import logger
+    t0 = time.time()
     encoded = quote(name, safe="")
     url = f"https://apexlegendsstatus.com/profile/{platform}/{encoded}"
     async with run_with_page() as page:
@@ -88,6 +95,8 @@ async def search_players(name: str, platform: str = "PC") -> list[dict]:
             await page.goto(url, wait_until="networkidle", timeout=30000)
             from astrbot.api import logger
             logger.info(f"[SearchPlayers] 实际URL: {page.url} (请求: {url})")
+            dt = time.time() - t0
+            logger.info(f"[SearchPlayers] 页面加载耗时: {dt:.1f}s")
             # 截图存 debug_screenshots/
             import uuid, os
             debug_dir = os.path.join(os.path.dirname(__file__), "..", "debug_screenshots")
