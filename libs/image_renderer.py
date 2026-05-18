@@ -483,7 +483,7 @@ def _draw_stats_sync(stats) -> bytes:
     # 数据来源 + 署名
     cy = card_y + card_h - PADDING - FONT_SIZES["small"]
     draw.text((card_x + PADDING, cy), "Data: apexlegendsstatus.com", font=FONT_SMALL, fill=MUTED)
-    wm = "赤羽真白"
+    wm = "auth.赤羽真白 · Apex Chiyuchan"
     wm_w, _ = _text_bbox(draw, wm, FONT_SMALL)
     draw.text((card_x + card_w - PADDING - wm_w, cy), wm, font=FONT_SMALL, fill=MUTED)
 
@@ -576,7 +576,7 @@ def _draw_map_sync(rotation) -> bytes:
     # 数据来源 + 署名
     bottom_y = card_y + card_h - PADDING - FONT_SIZES["small"]
     draw.text((card_x + PADDING, bottom_y), "Data: apexlegendsstatus.com", font=FONT_SMALL, fill=MUTED)
-    wm = "赤羽真白"
+    wm = "auth.赤羽真白 · Apex Chiyuchan"
     wm_w, _ = _text_bbox(draw, wm, FONT_SMALL)
     draw.text((card_x + card_w - PADDING - wm_w, bottom_y), wm, font=FONT_SMALL, fill=MUTED)
 
@@ -683,7 +683,7 @@ def _draw_master_sync(predator) -> bytes:
     # Footer + 署名
     bottom_y = card_y + card_h - PADDING - FONT_SIZES["small"] - 2
     draw.text((card_x + PADDING, bottom_y), "Data: apexlegendsstatus.com", font=FONT_SMALL, fill=MUTED)
-    wm = "赤羽真白"
+    wm = "auth.赤羽真白 · Apex Chiyuchan"
     wm_w, _ = _text_bbox(draw, wm, FONT_SMALL)
     draw.text((card_x + card_w - PADDING - wm_w, bottom_y), wm, font=FONT_SMALL, fill=MUTED)
 
@@ -809,7 +809,7 @@ def _draw_team_sync(team: dict) -> bytes:
     ttl_hours = team.get("ttl_hours", 12)
     draw.text((cx, cy), f"{ttl_hours} 小时后自动解散", font=FONT_CAPTION, fill=MUTED)
 
-    _draw_centered_text(draw, "赤羽真白", card_x, card_y + card_h - FONT_SIZES["caption"] - 8, card_w, FONT_CAPTION, fill=MUTED)
+    _draw_centered_text(draw, "auth.赤羽真白 · Apex Chiyuchan", card_x, card_y + card_h - FONT_SIZES["caption"] - 8, card_w, FONT_CAPTION, fill=MUTED)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -859,7 +859,7 @@ def _draw_team_list_sync(teams: list[dict]) -> bytes:
             )
             cy += item_h
 
-    _draw_centered_text(draw, "赤羽真白", card_x, card_y + card_h - FONT_SIZES["caption"] - 8, card_w, FONT_CAPTION, fill=MUTED)
+    _draw_centered_text(draw, "auth.赤羽真白 · Apex Chiyuchan", card_x, card_y + card_h - FONT_SIZES["caption"] - 8, card_w, FONT_CAPTION, fill=MUTED)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -919,7 +919,7 @@ def _draw_bind_sync(uid: str, name: str, platform: str) -> bytes:
             )
         cy += FONT_SIZES["body"] + 6
 
-    _draw_centered_text(draw, "赤羽真白", card_x, card_y + card_h - FONT_SIZES["caption"] - 8, card_w, FONT_CAPTION, fill=MUTED)
+    _draw_centered_text(draw, "auth.赤羽真白 · Apex Chiyuchan", card_x, card_y + card_h - FONT_SIZES["caption"] - 8, card_w, FONT_CAPTION, fill=MUTED)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -956,7 +956,7 @@ def _draw_unbind_sync() -> bytes:
         draw, "Apex 账号已与本 QQ 解除绑定", card_x, cy, card_w, FONT_BODY, fill=MUTED
     )
 
-    _draw_centered_text(draw, "赤羽真白", card_x, card_y + card_h - FONT_SIZES["caption"] - 8, card_w, FONT_CAPTION, fill=MUTED)
+    _draw_centered_text(draw, "auth.赤羽真白 · Apex Chiyuchan", card_x, card_y + card_h - FONT_SIZES["caption"] - 8, card_w, FONT_CAPTION, fill=MUTED)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -1395,7 +1395,7 @@ def _draw_profile_sync(
     # ── Footer ──
     bottom_y = card_y + card_h - PADDING - FONT_SIZES["small"]
     draw.text((card_x + PADDING, bottom_y), "Data: apexlegendsstatus.com", font=FONT_SMALL, fill=MUTED)
-    wm = "赤羽真白"
+    wm = "auth.赤羽真白 · Apex Chiyuchan"
     wm_w, _ = _text_bbox(draw, wm, FONT_SMALL)
     draw.text((card_x + card_w - PADDING - wm_w, bottom_y), wm, font=FONT_SMALL, fill=MUTED)
 
@@ -1568,7 +1568,7 @@ body {{
     <div class="title">{title}</div>
     {cards_html}
     {hint_html}
-    <div class="watermark">赤羽真白</div>
+    <div class="watermark">auth.赤羽真白 · Apex Chiyuchan</div>
 </div></body></html>"""
 
     try:
@@ -1719,7 +1719,7 @@ def _draw_player_list_sync(players: list[dict], hint: str) -> bytes:
             draw, hint, card_x0, cy, card_w0, FONT_CAPTION, fill=MUTED
         )
 
-    _draw_centered_text(draw, "赤羽真白", card_x0, card_y0 + card_h0 - FONT_SIZES["caption"] - 8, card_w0, FONT_CAPTION, fill=MUTED)
+    _draw_centered_text(draw, "auth.赤羽真白 · Apex Chiyuchan", card_x0, card_y0 + card_h0 - FONT_SIZES["caption"] - 8, card_w0, FONT_CAPTION, fill=MUTED)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -1757,7 +1757,7 @@ def _draw_text_sync(title: str, message: str, is_error: bool = False) -> bytes:
         draw.text((cx + 8, cy), line, font=FONT_BODY, fill=MUTED)
         cy += line_h
 
-    _draw_centered_text(draw, "赤羽真白", card_x, card_y + card_h - FONT_SIZES["caption"] - 8, card_w, FONT_CAPTION, fill=MUTED)
+    _draw_centered_text(draw, "auth.赤羽真白 · Apex Chiyuchan", card_x, card_y + card_h - FONT_SIZES["caption"] - 8, card_w, FONT_CAPTION, fill=MUTED)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")

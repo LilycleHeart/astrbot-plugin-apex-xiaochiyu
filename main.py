@@ -18,8 +18,8 @@ from .libs.als_scraper import fetch_badges, search_players
 
 
 @register(
-    "apex_xiaochiyu",
-    "小赤羽",
+    "apex_chiyuchan",
+    "赤羽千",
     "Apex 战绩查询 / 地图轮换 / 大师数据 / 组队系统",
     "1.0.0",
 )
