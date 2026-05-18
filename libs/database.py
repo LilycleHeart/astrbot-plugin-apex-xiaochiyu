@@ -302,17 +302,14 @@ class Database:
     async def get_rp_delta(
         self, uid: str, platform: str, current_score: int
     ) -> int | None:
-        """距上次查询的 RP 变化，超过24小时或无记录返回 None"""
+        """距上次查询的 RP 变化，无记录返回 None"""
         conn = await self._get_conn()
         async with conn.execute(
-            "SELECT rank_score, recorded_at FROM rp_history WHERE uid = ? AND platform = ?",
+            "SELECT rank_score FROM rp_history WHERE uid = ? AND platform = ?",
             (uid, platform),
         ) as cursor:
             row = await cursor.fetchone()
         if not row:
-            return None
-        recorded = datetime.strptime(row["recorded_at"], "%Y-%m-%d %H:%M:%S")
-        if datetime.now() - recorded > timedelta(hours=24):
             return None
         return current_score - row["rank_score"]
 
