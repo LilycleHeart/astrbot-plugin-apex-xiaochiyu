@@ -191,3 +191,16 @@ python -m playwright install webkit
 ## ⭐ Star 支持
 
 如果这个插件对你有帮助，欢迎点个 Star 支持一下项目。
+# ❤️ 赞助支持
+
+<p align="center">
+  <img src="https://pub.mini-tools.uk/30-day/19d394f6-a896-4a2d-9716-a0d67fb8d132.jpg" width="96" style="border-radius:50%;" />
+</p>
+
+<p align="center">
+  <b>唯念</b>
+</p>
+
+<p align="center">
+  感谢对 小赤羽 / Apex 插件 的支持
+</p>
