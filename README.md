@@ -1,4 +1,4 @@
-# 小赤羽 / AstrBot Apex 数据查询插件
+<h1 align="center">⚡ 小赤羽 / AstrBot Apex 数据查询插件</h1>
 
 <p align="center">
   <b>一个专注于 Apex 英雄数据查询 · 组队 · 状态追踪 的 AstrBot 多功能插件</b>
