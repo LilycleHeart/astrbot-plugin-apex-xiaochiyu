@@ -12,9 +12,9 @@ from astrbot.api import logger
 
 class Database:
     def __init__(self):
-        data_dir = Path(get_astrbot_data_path()) / "plugin_data" / "apex_xiaochiyu"
+        data_dir = Path(get_astrbot_data_path()) / "plugin_data" / "apex_chiyuchan"
         data_dir.mkdir(parents=True, exist_ok=True)
-        self.db_path = data_dir / "xiaochiyu.db"
+        self.db_path = data_dir / "chiyuchan.db"
         self._conn: aiosqlite.Connection | None = None
         self._lock = asyncio.Lock()
 

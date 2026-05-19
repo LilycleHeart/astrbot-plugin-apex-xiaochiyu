@@ -2,12 +2,12 @@
 
 AstrBot 插件 —— 一个专注于 Apex英雄数据查询、组队与状态追踪的多功能 Bot。
 <p align="center">
-  <img src="https://count.getloli.com/@apex-xiaochiyu?theme=rule34&name=apex-xiaochiyu" alt="Moe Counter" />
+  <img src="https://count.getloli.com/@apex-chiyuchan?theme=rule34&name=apex-chiyuchan" alt="Moe Counter" />
 </p>
 
 [![AstrBot](https://img.shields.io/badge/AstrBot-%3E%3D4.24-blue)](https://astrbot.app)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB)](https://www.python.org/)
-[![License](https://img.shields.io/github/license/LilycleHeart/astrbot-plugin-apex-xiaochiyu)](https://github.com/LilycleHeart/astrbot-plugin-apex-xiaochiyu)
+[![License](https://img.shields.io/github/license/LilycleHeart/astrbot_plugin_apex_chiyuchan)](https://github.com/LilycleHeart/astrbot_plugin_apex_chiyuchan)
 
 ---
 
@@ -132,7 +132,7 @@ Bot 会自动识别意图，优先返回文字总结，再发送数据卡片。
 下载仓库 ZIP：
 
 ```text
-astrbot-plugin-apex-xiaochiyu.zip
+astrbot_plugin_apex_chiyuchan.zip
 ```
 
 然后在 AstrBot WebUI：

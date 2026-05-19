@@ -31,7 +31,7 @@ class XiaoChiyu(Star):
         self.apex = ApexClient(api_key)
         self.db = Database()
 
-        self._temp_dir = Path(get_astrbot_data_path()) / "temp" / "apex_xiaochiyu"
+        self._temp_dir = Path(get_astrbot_data_path()) / "temp" / "apex_chiyuchan"
         self._temp_dir.mkdir(parents=True, exist_ok=True)
 
         self._last_search: dict[str, list[dict]] = {}
